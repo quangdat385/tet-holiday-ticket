@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["relationJoins"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model UserVerify {
+  verify_id         Int      @id @default(autoincrement()) @map("verify_id")
+  verify_otp        String   @map("verify_otp") @db.VarChar(6)
+  verify_key        String   @unique @map("verify_key") @db.VarChar(255)
+  verify_key_hash   String   @map("verify_key_hash") @db.VarChar(255)
+  verify_type       Int      @default(1) @map("verify_type")
+  is_verified       Int      @default(0) @map("is_verified")
+  is_deleted        Int      @default(0) @map("is_deleted")
+  verify_created_at DateTime @default(now()) @map("verify_created_at") @db.Timestamp(0)
+  verify_updated_at DateTime @updatedAt @map("verify_updated_at") @db.Timestamp(0)
+
+  @@index([verify_otp], name: "idx_verify_otp")
+  @@map("pre_nestjs_acc_user_verify_9999")
+}
+
+model UserBase {
+  user_id               BigInt         @id @default(autoincrement()) @map("user_id")
+  user_account          String         @unique @map("user_account") @db.VarChar(255)
+  user_password         String         @map("user_password") @db.VarChar(255)
+  user_salt             String         @map("user_salt") @db.VarChar(255)
+  user_login_time       DateTime       @default(now()) @map("user_login_time")
+  user_logout_time      DateTime       @default(now()) @map("user_logout_time")
+  user_login_ip         String?        @map("user_login_ip") @db.VarChar(255)
+  is_two_factor_enabled Int            @default(0) @map("is_two_factor_enabled")
+  user_created_at       DateTime       @default(now()) @map("user_created_at") @db.Timestamp(0)
+  user_updated_at       DateTime       @updatedAt @map("user_updated_at") @db.Timestamp(0)
+  user_roles            UserUserRole[]
+  user_menus            UserMenu[]
+  user_key_token        UserKeyToken[]
+
+  @@map("pre_nestjs_acc_user_base_9999")
+}
+
+model UserInfo {
+  user_id                BigInt    @id @map("user_id")
+  user_account           String    @unique @map("user_account") @db.VarChar(255)
+  user_nickname          String?   @map("user_nickname") @db.VarChar(255)
+  user_avatar            String?   @map("user_avatar") @db.VarChar(255)
+  user_state             Int       @default(0) @map("user_state")
+  user_gender            Int       @default(0) @map("user_gender")
+  user_mobile            String?   @map("user_mobile") @db.VarChar(20)
+  user_birthday          DateTime? @map("user_birthday") @db.Timestamp(0)
+  user_email             String?   @map("user_email") @db.VarChar(255)
+  user_is_authentication Boolean   @default(false) @map("user_is_authentication")
+  created_at             DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updated_at             DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  @@index([user_mobile], name: "idx_user_mobile")
+  @@index([user_email], name: "idx_user_email")
+  @@index([user_state], name: "idx_user_state")
+  @@index([user_is_authentication], name: "idx_user_is_authentication")
+  @@map("pre_nestjs_acc_user_info_9999")
+}
+
+model UserTwoFactor {
+  two_factor_id          BigInt   @id @default(autoincrement()) @map("two_factor_id")
+  user_id                BigInt   @map("user_id")
+  two_factor_auth_type   Int      @default(0) @map("two_factor_auth_type")
+  two_factor_auth_secret String?  @map("two_factor_auth_secret") @db.VarChar(255)
+  two_factor_phone       String?  @map("two_factor_phone") @db.VarChar(20)
+  two_factor_email       String?  @map("two_factor_email") @db.VarChar(255)
+  two_factor_is_active   Int      @default(0) @map("two_factor_is_active")
+  two_factor_created_at  DateTime @default(now()) @map("two_factor_created_at") @db.Timestamp(0)
+  two_factor_updated_at  DateTime @updatedAt @map("two_factor_updated_at") @db.Timestamp(0)
+
+  @@index([user_id], name: "idx_user_id")
+  @@index([two_factor_auth_type], name: "idx_two_factor_auth_type")
+  @@map("pre_nestjs_acc_user_two_factor_9999")
+}
+
+model UserRole {
+  role_id          BigInt         @id @default(autoincrement()) @map("role_id")
+  role_name        String         @unique @map("role_name") @db.VarChar(25)
+  role_description String?        @map("role_description") @db.VarChar(255)
+  user_created     BigInt         @map("user_created")
+  created_at       DateTime       @default(now()) @map("created_at") @db.Timestamp(0)
+  updated_at       DateTime       @updatedAt @map("updated_at") @db.Timestamp(0)
+  role_users       UserUserRole[]
+  role_menus       UserRoleMenu[]
+
+  @@map("pre_nestjs_acc_user_role_9999")
+}
+
+model UserUserRole {
+  user_id BigInt @map("user_id")
+  role_id BigInt @map("role_id")
+
+  userBase UserBase @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
+  userRole UserRole @relation(fields: [role_id], references: [role_id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([user_id, role_id])
+  @@map("pre_nestjs_acc_user_user_role_9999")
+}
+
+model UserMenu {
+  menu_id      BigInt   @id @default(autoincrement()) @map("menu_id")
+  menu_name    String   @unique @map("menu_name") @db.VarChar(255)
+  menu_pid     String   @unique @map("menu_pid") @db.VarChar(255)
+  menu_prefix  String   @unique @map("menu_prefix") @db.VarChar(255)
+  menu_url     String   @map("menu_url") @db.VarChar(255)
+  user_created BigInt   @map("user_crearted")
+  created_at   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updated_at   DateTime @updatedAt() @map("updated_at") @db.Timestamp(0)
+
+  user_base      UserBase       @relation(fields: [user_created], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
+  user_role_menu UserRoleMenu[]
+
+  @@map("pre_nestjs_acc_user_menu_9999")
+}
+
+model UserRoleMenu {
+  role_id    BigInt   @map("role_id")
+  menu_id    BigInt   @map("menu_id")
+  created_at DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updated_at DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  user_role UserRole @relation(fields: [role_id], references: [role_id], onDelete: Cascade)
+  user_menu UserMenu @relation(fields: [menu_id], references: [menu_id], onDelete: Cascade)
+
+  @@id([role_id, menu_id])
+  @@map("pre_nestjs_acc_user_role_menu_9999")
+}
+
+model UserKeyToken {
+  id            BigInt   @id @default(autoincrement())
+  refresh_token String   @unique @db.VarChar(600)
+  user_id       BigInt   @map("user_id")
+  public_key    String   @map("public_key") @db.VarChar(600)
+  private_key   String   @map("private_key") @db.VarChar(600)
+  expireAt      DateTime @map("expire_at") @db.Timestamp(0)
+  user_base     UserBase @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([user_id], name: "idx_user_id")
+  @@map("pre_nestjs_acc_user_key_token_9999")
+}

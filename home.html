@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        #messageArea {
+            height: 400px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+            padding: 10px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+        }
+
+        #messageForm {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        #messageInput {
+            flex-grow: 1;
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .message {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .received {
+            background-color: #e3f2fd;
+        }
+
+        .sent {
+            background-color: #e8f5e9;
+            text-align: right;
+        }
+
+        #connectionStatus {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .connected {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .disconnected {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>WebSocket Chat</h1>
+
+    <div id="connectionStatus" class="disconnected">Disconnected</div>
+
+    <div id="messageArea"></div>
+
+    <form id="messageForm">
+        <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off">
+        <button type="submit">Send</button>
+    </form>
+
+    <div>
+        <button id="connectButton">Connect</button>
+        <button id="disconnectButton" disabled>Disconnect</button>
+    </div>
+
+    <script>
+        let socket;
+        const messageArea = document.getElementById('messageArea');
+        const messageForm = document.getElementById('messageForm');
+        const messageInput = document.getElementById('messageInput');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const connectButton = document.getElementById('connectButton');
+        const disconnectButton = document.getElementById('disconnectButton');
+
+        // Connect to WebSocket server
+        function connect() {
+            // Use the appropriate WebSocket URL based on your server configuration
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${wsProtocol}//localhost:8084/ws?client_id=1`; // Adjust the client_id as needed
+
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = function (e) {
+                console.log('Connection established');
+                connectionStatus.textContent = 'Connected';
+                connectionStatus.className = 'connected';
+                connectButton.disabled = true;
+                disconnectButton.disabled = false;
+                addMessage('System', 'Connected to the server', 'received');
+            };
+
+            socket.onmessage = function (event) {
+                console.log('Message from server:', event.data);
+                const value = JSON.parse(event.data);
+                addMessage('Server', value.data.msg, 'received');
+            };
+
+            socket.onclose = function (event) {
+                if (event.wasClean) {
+                    console.log(`Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+                    addMessage('System', `Connection closed: ${event.reason}`, 'received');
+                } else {
+                    console.error('Connection died');
+                    addMessage('System', 'Connection died', 'received');
+                }
+                connectionStatus.textContent = 'Disconnected';
+                connectionStatus.className = 'disconnected';
+                connectButton.disabled = false;
+                disconnectButton.disabled = true;
+            };
+
+            socket.onerror = function (error) {
+                console.error('WebSocket error:', error);
+                addMessage('System', 'WebSocket error occurred', 'received');
+                connectionStatus.textContent = 'Error: Connection failed';
+                connectionStatus.className = 'disconnected';
+            };
+        }
+
+        // Disconnect from WebSocket server
+        function disconnect() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.close();
+            }
+        }
+
+        // Add message to the message area
+        function addMessage(sender, message, type) {
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${type}`;
+
+            const timestamp = new Date().toLocaleTimeString();
+            messageElement.innerHTML = `<strong>${sender} (${timestamp}):</strong> ${message}`;
+
+            messageArea.appendChild(messageElement);
+            messageArea.scrollTop = messageArea.scrollHeight;
+        }
+
+        // Event listeners
+        messageForm.addEventListener('submit', function (e) {
+            /*if (messageInput.files && messageInput.files.length > 0) {
+                const file = messageInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const fileData = evt.target.result;
+                    const fileMsg = {
+                        type: 'File',
+                        data: {
+                            from: 1,
+                            to: 1,
+                            filename: file.name,
+                            filetype: file.type,
+                            content: fileData.split(',')[1] // base64
+                        }
+                    };
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        socket.send(JSON.stringify(fileMsg));
+                        addMessage('You', `Sent file: ${file.name}`, 'sent');
+                        messageInput.value = '';
+                    }
+                };
+                reader.readAsDataURL(file);
+                e.preventDefault();
+                return;
+            } 
+            */
+            e.preventDefault();
+            const message = messageInput.value.trim();
+            const data = {
+                type: 'Text',
+                data: {
+                    from: 1,
+                    to: 1,
+                    msg: message
+                }
+            }
+
+            if (message && socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(data));
+                addMessage('You', message, 'sent');
+                messageInput.value = '';
+            }
+        });
+
+        connectButton.addEventListener('click', connect);
+        disconnectButton.addEventListener('click', disconnect);
+
+        // Optional: Auto-connect when page loads
+        // window.addEventListener('load', connect);
+    </script>
+</body>
+
+</html>

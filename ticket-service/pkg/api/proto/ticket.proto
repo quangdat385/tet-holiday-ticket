@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package ticket;
+
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "pkg/api/proto";
+
+
+service TicketService {
+    rpc GetTicketItem(GetTicketItemRequest) returns (PreGoTicketItem99999);
+    rpc GetTicket(GetTicketRequest) returns (PreGoTicket99999);
+}
+
+message GetTicketRequest {
+    int64 id = 1;
+}
+
+message GetTicketItemRequest {
+  int64 id = 1;
+}
+
+message PreGoTicket99999 {
+    int64 id = 1;
+    string name = 2;
+    string description = 3;
+    google.protobuf.Timestamp start_time = 9 ;
+    google.protobuf.Timestamp end_time = 10;
+}
+message PreGoTicketItem99999 {
+    int64 id = 1;
+    string name = 2;
+    string description = 3;
+    int32 stock_initial = 4;
+    int32 stock_available = 5;
+    bool is_stock_prepared = 6;
+    double price_original = 7;
+    double price_flash = 8;
+    google.protobuf.Timestamp sale_start_time = 9;
+    google.protobuf.Timestamp sale_end_time = 10;
+    int32 status = 11;
+    int32 activity_id = 12;
+}
