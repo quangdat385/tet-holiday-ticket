@@ -23,6 +23,7 @@ type sTicketItem struct {
 	r                *database.Queries
 	distributedCache service.IRedisCache
 	localCache       service.ILocalCache // Video Go 39: Add local cache
+	// Add a default return for unhandled cases
 }
 
 func NewTicketItemImpl(r *database.Queries, redisCache service.IRedisCache, localCache service.ILocalCache) *sTicketItem {
@@ -227,28 +228,28 @@ func (s *sTicketItem) getTicketItemFromDatabaseLock(ctx context.Context, ticketI
 }
 
 // get data from database
-func (s *sTicketItem) DecreaseStock(ctx context.Context, ticketId int, quantity int) (out model.TicketItemsOutput, err error) {
-
-	newStock, err := s.decreaseStockCacheByLuaScript(ctx, ticketId, quantity)
-	if err != nil {
-		return out, fmt.Errorf("failed to decrease stock: %w", err)
+func (s *sTicketItem) DecreaseStock(ctx context.Context, ticketId int, quantity int) (out int, code int) {
+	newStock, errCode := s.decreaseStockCacheByLuaScript(ctx, ticketId, quantity)
+	if errCode == 1 {
+		return out, 1
 	}
+	if errCode == 2 {
+		return out, 2
+	}
+
 	result, err := s.r.UpdateTicketItemStock(ctx, database.UpdateTicketItemStockParams{
 		ID:               int64(ticketId),
-		StockAvailable:   int32(quantity),
+		StockAvailable:   int32(newStock),
 		StockAvailable_2: int32(newStock + quantity),
 	})
 	if err != nil {
-		return out, fmt.Errorf("failed to update ticket item stock: %w", err)
+		return out, 1
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return out, fmt.Errorf("failed to get last insert id: %w", err)
+	_, lastErr := result.LastInsertId()
+	if lastErr != nil {
+		return out, 1
 	}
-	go s.getTicketItemFromDatabaseLock(ctx, int(id))
-	out.TicketId = int(id)
-	return out, nil
-
+	return newStock, 3
 }
 
 // get data from redis distributed
@@ -323,7 +324,7 @@ func (s *sTicketItem) getKeyStockItemCahe(ticketId int) string {
 	return "TICKET::" + strconv.Itoa(ticketId) + "::STOCK"
 }
 
-func (s *sTicketItem) decreaseStockCacheByLuaScript(ctx context.Context, ticketId int, quantity int) (int, error) {
+func (s *sTicketItem) decreaseStockCacheByLuaScript(ctx context.Context, ticketId int, quantity int) (number int, codeStatus int) {
 	// Lua script to atomically decrease the stock
 	luaScript := `
 		local currentStock = redis.call("GET", KEYS[1])
@@ -344,19 +345,18 @@ func (s *sTicketItem) decreaseStockCacheByLuaScript(ctx context.Context, ticketI
 	// Execute the Lua script
 	result, err := global.Rdb.Eval(ctx, luaScript, []string{s.getKeyStockItemCahe(ticketId)}, quantity).Result()
 	if err != nil {
-		return 0, fmt.Errorf("failed to execute Lua script: %w", err)
+		return 0, 1
 	}
 
 	newStock, ok := result.(int64)
 	if !ok {
-		return 0, fmt.Errorf("unexpected result type from Lua script")
+		return 0, 1
 	}
 
 	if newStock == -1 {
-		return 0, fmt.Errorf("not enough stock")
+		return 0, 2
 	}
-
-	return int(newStock), nil
+	return int(newStock), 3
 }
 func (s *sTicketItem) DeleteTicketItem(ctx context.Context, ticketItemId int) (err error) {
 	// 1. find ticket item by id

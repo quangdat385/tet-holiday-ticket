@@ -1,6 +1,10 @@
 package manager
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/quangdat385/holiday-ticket/communications-service/internal/controller"
+	"github.com/quangdat385/holiday-ticket/communications-service/internal/middleware"
+)
 
 type InformationRouter struct{}
 
@@ -12,8 +16,8 @@ func (r *InformationRouter) InitInformationRouter(Router *gin.RouterGroup) {
 	}
 
 	InformationRouterPrivateGroup := Router.Group("information")
-	InformationRouterPrivateGroup.Use()
+	InformationRouterPrivateGroup.Use(middleware.AuthenMiddleWare(), middleware.RoleMiddleware("Admin", "Manager"))
 	{
-		// Define private routes here
+		InformationRouterPrivateGroup.DELETE("delete/:information_id", controller.InformationRouter.DeleteInformationByID)
 	}
 }

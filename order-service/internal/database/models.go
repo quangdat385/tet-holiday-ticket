@@ -5,8 +5,8 @@
 package database
 
 import (
-	"database/sql"
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -60,6 +60,10 @@ type PreGoOrder05202599999 struct {
 	ID int32
 	// Order number
 	OrderNumber string
+	// User ID
+	UserID int64
+	// Station code
+	StationCode string
 	// Order amount
 	OrderAmount string
 	// Terminal ID
@@ -67,7 +71,9 @@ type PreGoOrder05202599999 struct {
 	// Order date
 	OrderDate time.Time
 	// Order notes
-	OrderNotes sql.NullString
+	OrderNotes string
+	// Order items
+	OrderItem json.RawMessage
 	// Last update time
 	UpdatedAt time.Time
 	// Creation time

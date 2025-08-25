@@ -43,7 +43,7 @@ func (q *Queries) GetNotificationById(ctx context.Context, id int64) (PreGoCommu
 const getNotificationWhenToIsNull = `-- name: GetNotificationWhenToIsNull :many
 SELECT id, ` + "`" + `from` + "`" + `, ` + "`" + `to` + "`" + `, content, created_at, updated_at
 FROM pre_go_communication_notification_99999
-WHERE ` + "`" + `to` + "`" + ` IS NULL
+WHERE ` + "`" + `to` + "`" + ` = 0
 LIMIT ? OFFSET ?
 `
 
@@ -105,18 +105,18 @@ func (q *Queries) GetNotificationsByUserIDFrom(ctx context.Context, from int64) 
 const getNotificationsByUserIDTo = `-- name: GetNotificationsByUserIDTo :many
 SELECT id, ` + "`" + `from` + "`" + `, ` + "`" + `to` + "`" + `, content, created_at, updated_at
 FROM pre_go_communication_notification_99999
-WHERE JSON_CONTAINS(` + "`" + `to` + "`" + `, JSON_QUOTE(?), '$')
+WHERE 'to' = ?
 LIMIT ? OFFSET ?
 `
 
 type GetNotificationsByUserIDToParams struct {
-	JSONQUOTE string
-	Limit     int32
-	Offset    int32
+	Column1 interface{}
+	Limit   int32
+	Offset  int32
 }
 
 func (q *Queries) GetNotificationsByUserIDTo(ctx context.Context, arg GetNotificationsByUserIDToParams) ([]PreGoCommunicationNotification99999, error) {
-	rows, err := q.db.QueryContext(ctx, getNotificationsByUserIDTo, arg.JSONQUOTE, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, getNotificationsByUserIDTo, arg.Column1, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -158,10 +158,25 @@ VALUES (?, ?, ?, NOW(), NOW())
 
 type InsertNotificationParams struct {
 	From    int64
-	To      json.RawMessage
+	To      sql.NullInt64
 	Content json.RawMessage
 }
 
 func (q *Queries) InsertNotification(ctx context.Context, arg InsertNotificationParams) (sql.Result, error) {
 	return q.db.ExecContext(ctx, insertNotification, arg.From, arg.To, arg.Content)
+}
+
+const updateNotificationById = `-- name: UpdateNotificationById :execresult
+INSERT INTO pre_go_communication_notification_user_99999 (user_id, notification_id, read_at)
+VALUES (?, ?, NOW()) ON DUPLICATE KEY
+UPDATE read_at = NOW()
+`
+
+type UpdateNotificationByIdParams struct {
+	UserID         int64
+	NotificationID int64
+}
+
+func (q *Queries) UpdateNotificationById(ctx context.Context, arg UpdateNotificationByIdParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, updateNotificationById, arg.UserID, arg.NotificationID)
 }

@@ -13,7 +13,7 @@ import helmet from 'helmet';
 async function bootstrap(): Promise<void> {
   const app: INestApplication = await NestFactory.create<INestApplication>(AppModule);
   app.enableCors({
-    origin: 'http://localhost:3500', // Thay bằng URL frontend của bạn
+    origin: '*', // Thay bằng URL frontend của bạn
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true // Nếu cần gửi cookie
   });

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/quangdat385/holiday-ticket/order-service/internal/model"
 	"github.com/quangdat385/holiday-ticket/order-service/internal/service"
 	"github.com/quangdat385/holiday-ticket/order-service/internal/vo"
 	"github.com/quangdat385/holiday-ticket/order-service/response"
@@ -31,7 +32,14 @@ func (c *cOrderController) CreateOrder(ctx *gin.Context) {
 		response.ErrorResponse(ctx, response.ParamInvalidCodeStatus, err.Error())
 		return
 	}
-	order, err := service.OrderService().CreateOrder(ctx, params)
+	order, err := service.OrderService().CreateOrder(ctx, model.OrderInput{
+		OrderNumber: params.OrderNUmber,
+		UserID:      params.UserID,
+		OrderAmount: params.OrderAmount,
+		TerminalID:  params.TerminalID,
+		OrderDate:   params.OrderDate,
+		OrderItem:   params.OrderItem,
+	})
 	if err != nil {
 		response.ErrorResponse(ctx, response.CreateErrorCodeStatus, err.Error())
 		return

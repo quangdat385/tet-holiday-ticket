@@ -2,9 +2,9 @@ package impl
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/quangdat385/holiday-ticket/communications-service/internal/database"
 	"github.com/quangdat385/holiday-ticket/communications-service/internal/model"
@@ -33,9 +33,9 @@ func (s *sNotification) GetNotificationById(context context.Context, id int64) (
 }
 func (s *sNotification) GetNotificationsByUserIDTo(context context.Context, userId int64) (out []model.NotificationOutput, err error) {
 	notifications, err := s.r.GetNotificationsByUserIDTo(context, database.GetNotificationsByUserIDToParams{
-		JSONQUOTE: fmt.Sprint(userId),
-		Offset:    0,
-		Limit:     50,
+		Column1: userId,
+		Offset:  0,
+		Limit:   50,
 	})
 	if err != nil {
 		return out, err
@@ -67,26 +67,16 @@ func (s *sNotification) GetNotificationsFromUserIDToIsNull(context context.Conte
 	return out, nil
 }
 func (s *sNotification) CreateNotification(context context.Context, input model.NotificationInput) (out model.NotificationOutput, err error) {
-	var toRawMessage json.RawMessage
-	if input.To != nil {
-		var ok bool
-		toRawMessage, ok = input.To.(json.RawMessage)
-		if !ok {
-			return out, errors.New("input.To must be of type json.RawMessage")
-		}
-	}
-	var contentRawMessage json.RawMessage
-	if input.Content != nil {
-		var ok bool
-		contentRawMessage, ok = input.Content.(json.RawMessage)
-		if !ok {
-			return out, errors.New("input.Content must be of type json.RawMessage")
-		}
-	}
 	notification, err := s.r.InsertNotification(context, database.InsertNotificationParams{
-		From:    input.From,
-		To:      toRawMessage,
-		Content: contentRawMessage,
+		From: input.From,
+		To: func() sql.NullInt64 {
+			toInt, ok := input.To.(int64)
+			return sql.NullInt64{Int64: toInt, Valid: ok}
+		}(),
+		Content: func() json.RawMessage {
+			b, _ := json.Marshal(input.Content)
+			return json.RawMessage(b)
+		}(),
 	})
 	if err != nil {
 		return out, err
@@ -102,6 +92,25 @@ func (s *sNotification) CreateNotification(context context.Context, input model.
 	out = mapper.ToNotificationDTO(notificationDb)
 	return out, nil
 }
+func (s *sNotification) UpdateNotification(context context.Context, input model.UpdateNotificationInput) (out bool, err error) {
+	notification, err := s.r.GetNotificationById(context, input.NotificationID)
+	if err != nil {
+		return out, err
+	}
+	if notification.ID == 0 {
+		return out, nil
+	}
+	_, err = s.r.UpdateNotificationById(context, database.UpdateNotificationByIdParams{
+		UserID:         input.UserID,
+		NotificationID: input.NotificationID,
+	})
+	if err != nil {
+		return out, err
+	}
+	out = true
+	return out, nil
+}
+
 func (s *sNotification) DeleteNotificationById(context context.Context, id int64) (err error) {
 	notification, err := s.r.GetNotificationById(context, id)
 	if err != nil {

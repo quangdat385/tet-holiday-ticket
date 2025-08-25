@@ -42,6 +42,6 @@ func InitService() {
 	// Init ticket segment price service
 	service.InitTicketSegmentPriceService(impl.NewTicketSegmentPriceImpl(queries))
 	// Init kafka consumer service
-	service.InitKafkaConsumerService(impl.NewKafkaConsumerServiceImpl(kafkaConsumer))
+	service.InitKafkaConsumerService(impl.NewKafkaConsumerServiceImpl(kafkaConsumer, queries))
 	go service.KafkaConsumerService().Consume()
 }

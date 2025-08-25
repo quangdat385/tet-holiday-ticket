@@ -17,7 +17,7 @@ SELECT id,
     created_at,
     updated_at
 FROM pre_go_communication_info_99999
-WHERE id = ?;
+WHERE user_id = ?;
 -- name: GetCommunicationInfoByID :one
 SELECT id,
     user_id,

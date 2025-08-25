@@ -55,11 +55,11 @@ SELECT id,
     created_at,
     updated_at
 FROM pre_go_communication_info_99999
-WHERE id = ?
+WHERE user_id = ?
 `
 
-func (q *Queries) GetCommunicationInfoByUserID(ctx context.Context, id int64) (PreGoCommunicationInfo99999, error) {
-	row := q.db.QueryRowContext(ctx, getCommunicationInfoByUserID, id)
+func (q *Queries) GetCommunicationInfoByUserID(ctx context.Context, userID int64) (PreGoCommunicationInfo99999, error) {
+	row := q.db.QueryRowContext(ctx, getCommunicationInfoByUserID, userID)
 	var i PreGoCommunicationInfo99999
 	err := row.Scan(
 		&i.ID,
@@ -88,7 +88,7 @@ VALUES (?, ?, ?, ?, NOW(), NOW())
 type InsertCommunicationInfoParams struct {
 	UserID int64
 	Status sql.NullBool
-	Value  string
+	Value  sql.NullString
 	Type   sql.NullString
 }
 
@@ -112,7 +112,7 @@ WHERE id = ?
 
 type UpdateCommunicationInfoParams struct {
 	Status sql.NullBool
-	Value  string
+	Value  sql.NullString
 	Type   sql.NullString
 	ID     int64
 }
@@ -137,7 +137,7 @@ WHERE user_id = ?
 
 type UpdateCommunicationInfoByUserIdParams struct {
 	Status sql.NullBool
-	Value  string
+	Value  sql.NullString
 	Type   sql.NullString
 	UserID int64
 }

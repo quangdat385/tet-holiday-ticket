@@ -7,7 +7,10 @@ type NotificationInput struct {
 	To      any   `json:"to"`
 	Content any   `json:"content"`
 }
-
+type UpdateNotificationInput struct {
+	UserID         int64 `json:"user_id"`
+	NotificationID int64 `json:"notification_id"`
+}
 type NotificationOutput struct {
 	ID        int64     `json:"id"`
 	From      int64     `json:"from"`

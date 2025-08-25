@@ -17,23 +17,30 @@ func InitRouter() *gin.Engine {
 		gin.SetMode(gin.ReleaseMode)
 		r = gin.New()
 	}
-	r.Use(middleware.Logger())
-	r.Use(middleware.CORSMiddleware())
 	socketRouter := router.RouterGroupApp.Socket
 	{
 		socketRouter.SocketRouter.InitSocketRouter(r)
 	}
+	r.Use(middleware.Logger())
+	r.Use(middleware.CORSMiddleware())
+	r.Use(middleware.NewRateLimit().GlobalRalimiter())
 	userRouter := router.RouterGroupApp.User
 	managerRouter := router.RouterGroupApp.Manager
-	MainGroup := r.Group("/communicaition-service/api/v1")
+	MainGroup := r.Group("/ticket-communication/api/v1")
 	{
 		MainGroup.GET("/checkStatus")
 	}
 	{
 		userRouter.MessageRouter.InitMessageRoter(MainGroup)
+		userRouter.ConversationRouter.InitConversationRouter(MainGroup)
+		userRouter.UserInformationRouter.InitUserInformationRouter(MainGroup)
+		userRouter.NotificationRouter.InitNotificationRouter(MainGroup)
 	}
 	{
 		managerRouter.MessageRouter.InitMessageRoter(MainGroup)
+		managerRouter.ConversationRouter.InitConversationRouter(MainGroup)
+		managerRouter.InformationRouter.InitInformationRouter(MainGroup)
+		managerRouter.NotificationRouter.InitNotificationRouter(MainGroup)
 	}
 	return r
 }

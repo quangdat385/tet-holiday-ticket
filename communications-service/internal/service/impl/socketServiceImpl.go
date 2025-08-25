@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -36,56 +35,31 @@ func NewSocketImpl(rdb *redis.Client) *sSocket {
 	}
 }
 func (s *sSocket) Connect(c *gin.Context) {
-	conn, err := s.upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		return
-	}
-	auth, _ := c.Get("UserID")
-	client_id, err := strconv.Atoi(auth.(string))
-	if err != nil {
-		log.Println("Error converting client_id:", err)
+	client_id := c.GetInt("UserID")
+	if client_id == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid client_id"})
 		return
 	}
 	log.Println("client_id: ", client_id)
-	client := socket.InitClient(global.Hub, conn, utils.GenerateRandomString(10), int64(client_id)) // 0 is client_id
-	log.Println("client: ", client)
-	result, err := service.InformationService().GetInformationByUserID(s.ctx, int64(client_id))
-	if err != nil {
-		log.Println("Error fetching communication info:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch communication info"})
-		return
-	}
-	if result.ID == 0 {
-		_, err = service.InformationService().InsertInformationByUserID(s.ctx, model.InfomationInput{
-			UserID: int64(client_id),
-			Status: true,
-			Value:  client.Id,
-			Type:   "socket_id",
-		})
-		if err != nil {
-			log.Println("Error inserting communication info:", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to insert communication info"})
-			return
-		}
-	}
-	_, err = service.InformationService().UpdateInformationByUserID(s.ctx, model.InfomationInput{
-		UserID: int64(client_id),
+	clientIDInt := int64(client_id)
+
+	clientID := utils.GenerateRandomString(10)
+	_, err := service.InformationService().UpdateInformationByUserID(s.ctx, model.InfomationInput{
+		UserID: clientIDInt,
 		Status: true,
-		Value:  client.Id,
+		Value:  clientID,
 		Type:   "socket_id",
 	})
 	if err != nil {
-		log.Println("Error updating communication info:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update communication info"})
 		return
 	}
-	_, err = service.InformationService().SetUserConnected(s.ctx, int64(client_id))
+	conn, err := s.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Println("Error setting user connected status:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to set userconnected status"})
 		return
 	}
+	client := socket.InitClient(global.Hub, conn, clientID, clientIDInt) // 0 is client_id
+	log.Println("client: ", client)
+	go service.InformationService().SetUserConnected(s.ctx, clientIDInt)
 	client.Hub.Register <- client
 	go client.WritePump(s.rdb)
 	go client.ReadPump(s.rdb)

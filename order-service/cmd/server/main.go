@@ -22,8 +22,8 @@ import (
 // @license.name  Apache 2.0
 // @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @BasePath  /ticket-order/api/v1/order
-// @schemes   http, https
+// @BasePath  /ticket-order/api/v1
+// @schemes   http  https
 
 // @securityDefinitions.apikey BearerAuth
 // @in header

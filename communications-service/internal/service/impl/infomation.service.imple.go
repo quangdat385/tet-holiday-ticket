@@ -46,7 +46,7 @@ func (s *sInformation) UpdateInformationByUserID(context context.Context, input 
 		information.Type.String = input.Type
 	}
 	if input.Value != "" {
-		information.Value = input.Value
+		information.Value = sql.NullString{String: input.Value, Valid: true}
 	}
 
 	_, err = s.r.UpdateCommunicationInfoByUserId(context, database.UpdateCommunicationInfoByUserIdParams{
@@ -66,7 +66,7 @@ func (s *sInformation) InsertInformationByUserID(context context.Context, input 
 		UserID: input.UserID,
 		Status: sql.NullBool{Bool: input.Status, Valid: true},
 		Type:   sql.NullString{String: input.Type, Valid: true},
-		Value:  input.Value,
+		Value:  sql.NullString{String: input.Value, Valid: false},
 	})
 	if err != nil {
 		return out, err

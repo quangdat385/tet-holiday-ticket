@@ -6,7 +6,6 @@ DROP TABLE IF EXISTS pre_go_communication_conversation_99999;
 CREATE TABLE IF NOT EXISTS pre_go_communication_conversation_99999 (
     id BIGINT NOT NULL AUTO_INCREMENT COMMENT 'Primary key',
     title VARCHAR(255) DEFAULT NULL,
-    user_ids JSON NOT NULL,
     description VARCHAR(255) DEFAULT '',
     type VARCHAR(50) DEFAULT 'personal',
     background VARCHAR(50) DEFAULT 'white',
@@ -15,7 +14,7 @@ CREATE TABLE IF NOT EXISTS pre_go_communication_conversation_99999 (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    INDEX idx_user_ids (user_ids(255))
+    INDEX idx_is_deleted (is_deleted)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'Pre-go communication conversation table';
 -- +goose StatementEnd
 -- +goose Down

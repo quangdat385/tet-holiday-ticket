@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS pre_go_communication_message_99999;
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS pre_go_communication_message_99999 (
     id BIGINT NOT NULL AUTO_INCREMENT COMMENT 'Primary key for the message table',
-    conversation_id BIGINT NOT NULL,
+    conversation_id BIGINT NOT NULL UNIQUE,
     user_id BIGINT NOT NULL,
     status BOOLEAN DEFAULT FALSE,
     message TEXT NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS pre_go_communication_message_99999 (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    INDEX idx_conversation_id (conversation_id),
+    FOREIGN KEY (conversation_id) REFERENCES pre_go_communication_conversation_99999(id) ON DELETE CASCADE,
     INDEX idx_user_id (user_id),
     FULLTEXT INDEX idx_message_text (message)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'ticket pre-go communication message table';

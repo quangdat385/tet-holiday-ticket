@@ -9,25 +9,20 @@ import (
 )
 
 func ToNotificationDTO(notification database.PreGoCommunicationNotification99999) model.NotificationOutput {
-	var Tos any
 	var Contents any
-	if notification.To != nil {
-		if err := json.Unmarshal(notification.To, &Tos); err != nil {
-			log.Printf("failed to unmarshal To: %v", err)
-			Tos = nil
-		}
-	} else {
-		Tos = nil
-	}
 	if err := json.Unmarshal(notification.Content, &Contents); err != nil {
 		log.Printf("failed to unmarshal Content: %v", err)
 		Contents = nil
 	}
+	var To int64
+	if notification.To.Valid {
+		To = notification.To.Int64
+	}
 	return model.NotificationOutput{
 		ID:        notification.ID,
 		From:      notification.From,
-		To:        Tos,
-		Content:   notification.Content,
+		To:        To,
+		Content:   Contents,
 		CreatedAt: notification.CreatedAt.Time,
 		UpdatedAt: notification.UpdatedAt.Time,
 	}

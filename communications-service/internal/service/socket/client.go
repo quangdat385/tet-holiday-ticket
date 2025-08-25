@@ -90,7 +90,7 @@ func (c *Client) ReadPump(rdb *redis.Client) {
 			}
 			break
 		}
-		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
+		message = bytes.TrimSpace(bytes.ReplaceAll(message, newline, space))
 		var msg Message
 		if err := json.Unmarshal(message, &msg); err != nil {
 			log.Printf("Invalid message format: %v", err)

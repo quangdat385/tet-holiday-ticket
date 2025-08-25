@@ -3,6 +3,8 @@ package utils
 import (
 	"fmt"
 	"math/rand"
+
+	"github.com/quangdat385/holiday-ticket/communications-service/internal/model"
 )
 
 func GetUserKey(hashKey string, device string) string {
@@ -18,4 +20,15 @@ func GenerateRandomString(n int) string {
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
+}
+
+// Loại phần tử có giá trị userId khỏi slice userIds
+func RemoveUserId(userIds []model.UserIDS, userId int64) []model.UserIDS {
+	result := make([]model.UserIDS, 0, len(userIds))
+	for _, id := range userIds {
+		if id.UserID != userId {
+			result = append(result, id)
+		}
+	}
+	return result
 }

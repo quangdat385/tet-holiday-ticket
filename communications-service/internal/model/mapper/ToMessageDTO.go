@@ -12,6 +12,7 @@ func ToMessageDTO(message database.PreGoCommunicationMessage99999) model.Message
 		UserID:         message.UserID,
 		Status:         message.Status.Bool,
 		Message:        message.Message,
+		Type:           message.Type,
 		CreatedAt:      message.CreatedAt.Time,
 		UpdatedAt:      message.UpdatedAt.Time,
 	}

@@ -12,7 +12,7 @@ type (
 		GetMessagesByConversationId(context context.Context, conversationId int64, limit, offset int32) (out []model.MessageOutput, err error)
 		GetMessageByUserId(context context.Context, userId int64, limit, offset int32) (out []model.MessageOutput, err error)
 		CreateMessage(context context.Context, in model.MessageInput) (out model.MessageOutput, err error)
-		UpdateMessageStatus(context context.Context, status bool, ID int64) (out model.MessageOutput, err error)
+		UpdateMessageStatus(context context.Context, message_id int64, user_id int64) (out bool, err error)
 		DeleteMessage(context context.Context, ID int64) (err error)
 	}
 )

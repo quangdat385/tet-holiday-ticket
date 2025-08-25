@@ -1,6 +1,10 @@
 package manager
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/quangdat385/holiday-ticket/communications-service/internal/controller"
+	"github.com/quangdat385/holiday-ticket/communications-service/internal/middleware"
+)
 
 type NotificationRouter struct {
 }
@@ -12,8 +16,9 @@ func (r *NotificationRouter) InitNotificationRouter(Router *gin.RouterGroup) {
 		// Define public routes here
 	}
 	NotificationRouterPrivateGroup := Router.Group("notification")
-	NotificationRouterPrivateGroup.Use()
+	NotificationRouterPrivateGroup.Use(middleware.AuthenMiddleWare(), middleware.RoleMiddleware("Admin", "Manager"))
 	{
-		// Define private routes here
+		NotificationRouterPrivateGroup.DELETE("/delete-by-id/:id", controller.NotificationControllerRouter.DeleteNotification)
+
 	}
 }

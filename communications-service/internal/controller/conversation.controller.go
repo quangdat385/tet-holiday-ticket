@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/quangdat385/holiday-ticket/communications-service/internal/model"
 	"github.com/quangdat385/holiday-ticket/communications-service/internal/service"
@@ -22,7 +24,7 @@ type cConversationController struct {
 // @Success      201  {object}  response.ResponseData{data=model.ConversationOutput} "Success"
 // @Failure 400 {object} response.ErrorResponseData "Invalid parameters"
 // @Failure 500 {object} response.ErrorResponseData "Internal server error"
-// @Router /conversations/create [post]
+// @Router /conversation/create [post]
 func (c *cConversationController) CreateConversation(ctx *gin.Context) {
 	var params vo.CreateConversationRequest
 	if err := ctx.ShouldBindJSON(&params); err != nil {
@@ -50,12 +52,14 @@ func (c *cConversationController) CreateConversation(ctx *gin.Context) {
 // @Tags Conversation
 // @Accept json
 // @Produce json
+// @Param        x-client-id header string true "Client ID"
+// @Param        x-device-id header string true "Device ID"
 // @Param conversation_id path int true "Conversation ID"
 // @Success 200 {object} response.ResponseData{data=model.ConversationOutput} "Success"
 // @Failure 400 {object} response.ErrorResponseData "Invalid parameters"
 // @Failure 404 {object} response.ErrorResponseData "Conversation not found"
 // @Failure 500 {object} response.ErrorResponseData "Internal server error"
-// @Router /conversations/get-by-id/{conversation_id} [get]
+// @Router /conversation/get-by-id/{conversation_id} [get]
 func (c *cConversationController) GetConversationByID(ctx *gin.Context) {
 	var params vo.ConversationIDRequest
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -75,19 +79,29 @@ func (c *cConversationController) GetConversationByID(ctx *gin.Context) {
 // @Tags Conversation
 // @Accept json
 // @Produce json
+// @Param        x-client-id header string true "Client ID"
+// @Param        x-device-id header string true "Device ID"
 // @Param user_id path int true "User ID"
+// @Param limit query int false "Limit" default(50)
+// @Param page query int false "Page" default(1)
 // @Success 200 {object} response.ResponseData{data=[]model.ConversationOutput} "Success"
 // @Failure 400 {object} response.ErrorResponseData "Invalid parameters"
 // @Failure 404 {object} response.ErrorResponseData "Conversations not found"
 // @Failure 500 {object} response.ErrorResponseData "Internal server error"
-// @Router /conversations/get-by-user-id/{user_id} [get]
+// @Router /conversation/get-by-user-id/{user_id} [get]
 func (c *cConversationController) GetConversationByUserID(ctx *gin.Context) {
 	var params vo.UserIDRequest
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		response.ErrorResponse(ctx, response.ParamInvalidCodeStatus, err.Error())
 		return
 	}
-	conversations, err := service.ConversationService().GetConversationByUserId(ctx, params.UserID)
+	var query vo.PageRequest
+	if err := ctx.ShouldBindQuery(&query); err != nil {
+		response.ErrorResponse(ctx, response.ParamInvalidCodeStatus, err.Error())
+		return
+	}
+	fmt.Println("Fetching conversations for user ID:", params.UserID)
+	conversations, err := service.ConversationService().GetConversationByUserId(ctx, params.UserID, query)
 	if err != nil {
 		response.ErrorResponse(ctx, response.NotFoundErrorCodeStatus, err.Error())
 		return
@@ -100,13 +114,15 @@ func (c *cConversationController) GetConversationByUserID(ctx *gin.Context) {
 // @Tags Conversation
 // @Accept json
 // @Produce json
+// @Param        x-client-id header string true "Client ID"
+// @Param        x-device-id header string true "Device ID"
 // @Param conversation_id path int true "Conversation ID"
 // @Param request body vo.UpdateConversationRequest true "Update conversation request"
 // @Success 200 {object} response.ResponseData{data=model.ConversationOutput} "Success"
 // @Failure 400 {object} response.ErrorResponseData "Invalid parameters"
 // @Failure 404 {object} response.ErrorResponseData "Conversation not found"
 // @Failure 500 {object} response.ErrorResponseData "Internal server error"
-// @Router /conversations/update [put]
+// @Router /conversation/update [put]
 func (c *cConversationController) UpdateConversation(ctx *gin.Context) {
 	var conversationID vo.ConversationIDRequest
 	if err := ctx.ShouldBindUri(&conversationID); err != nil {
@@ -126,7 +142,6 @@ func (c *cConversationController) UpdateConversation(ctx *gin.Context) {
 		ID:          params.ConversationID,
 		Title:       params.Title,
 		Description: params.Description,
-		UserIDS:     params.UserIDS,
 		Type:        params.Type,
 		Background:  params.Background,
 		Emoji:       params.Emoji,
@@ -144,13 +159,15 @@ func (c *cConversationController) UpdateConversation(ctx *gin.Context) {
 // @Tags Conversation
 // @Accept json
 // @Produce json
+// @Param        x-client-id header string true "Client ID"
+// @Param        x-device-id header string true "Device ID"
 // @Param conversation_id path int true "Conversation ID"
 // @Param request body vo.AddUserToConversationRequest true "Add users to conversation request"
 // @Success 200 {object} response.ResponseData{data=model.ConversationOutput} "Success"
 // @Failure 400 {object} response.ErrorResponseData "Invalid parameters"
 // @Failure 404 {object} response.ErrorResponseData "Conversation not found"
 // @Failure 500 {object} response.ErrorResponseData "Internal server error"
-// @Router /conversations/add-users/{conversation_id} [patch]
+// @Router /conversation/add-users/{conversation_id} [patch]
 func (c *cConversationController) AddUserToConversation(ctx *gin.Context) {
 	var params vo.ConversationIDRequest
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -181,11 +198,13 @@ func (c *cConversationController) AddUserToConversation(ctx *gin.Context) {
 // @Produce json
 // @Param conversation_id path int true "Conversation ID"
 // @Param user_id path int true "User ID"
+// @Param        x-client-id header string true "Client ID"
+// @Param        x-device-id header string true "Device ID"
 // @Success 200 {object} response.ResponseData{data=model.ConversationOutput} "Success"
 // @Failure 400 {object} response.ErrorResponseData "Invalid parameters"
 // @Failure 404 {object} response.ErrorResponseData "Conversation not found"
 // @Failure 500 {object} response.ErrorResponseData "Internal server error"
-// @Router /conversations/remove-user/{conversation_id}/{user_id} [delete]
+// @Router /conversation/remove-users/{conversation_id}/{user_id} [patch]
 func (c *cConversationController) RemoveUserFromConversation(ctx *gin.Context) {
 	var params vo.ConversationIDRequest
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -210,21 +229,22 @@ func (c *cConversationController) RemoveUserFromConversation(ctx *gin.Context) {
 // @Tags Conversation
 // @Accept json
 // @Produce json
+// @Param        x-client-id header string true "Client ID"
+// @Param        x-device-id header string true "Device ID"
 // @Param conversation_id path int true "Conversation ID"
 // @Success 200 {object} response.ResponseData{data=string} "Success"
 // @Failure 400 {object} response.ErrorResponseData "Invalid parameters"
 // @Failure 404 {object} response.ErrorResponseData "Conversation not found"
 // @Failure 500 {object} response.ErrorResponseData "Internal server error"
-// @Router /conversations/soft-delete/{conversation_id} [delete]
+// @Router /conversation/soft-delete/{conversation_id} [put]
 func (c *cConversationController) SoftDeleteConversation(ctx *gin.Context) {
 	var params vo.ConversationIDRequest
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		response.ErrorResponse(ctx, response.ParamInvalidCodeStatus, err.Error())
 		return
 	}
-	conversation, err := service.ConversationService().UpdateConversation(ctx, model.UpdateConversationInput{
-		ID:        params.ConversationID,
-		IsDeleted: true,
+	conversation, err := service.ConversationService().SoftDeleteConversation(ctx, model.SoftDeleteConversationInput{
+		ID: params.ConversationID,
 	})
 	if err != nil {
 		response.ErrorResponse(ctx, response.UpdateErrorCodeStatus, err.Error())
@@ -238,12 +258,14 @@ func (c *cConversationController) SoftDeleteConversation(ctx *gin.Context) {
 // @Tags Conversation
 // @Accept json
 // @Produce json
+// @Param        x-client-id header string true "Client ID"
+// @Param        x-device-id header string true "Device ID"
 // @Param conversation_id path int true "Conversation ID"
 // @Success 200 {object} response.ResponseData{data=string} "Success"
 // @Failure 400 {object} response.ErrorResponseData "Invalid parameters"
 // @Failure 404 {object} response.ErrorResponseData "Conversation not found"
 // @Failure 500 {object} response.ErrorResponseData "Internal server error"
-// @Router /conversations/delete/{conversation_id} [delete]
+// @Router /conversation/delete/{conversation_id} [delete]
 func (c *cConversationController) DeleteConversation(ctx *gin.Context) {
 	var params vo.ConversationIDRequest
 	if err := ctx.ShouldBindUri(&params); err != nil {

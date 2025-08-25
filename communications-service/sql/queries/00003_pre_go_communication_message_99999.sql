@@ -18,16 +18,22 @@ SELECT *
 FROM pre_go_communication_message_99999
 WHERE conversation_id = ?
 LIMIT ? OFFSET ?;
+-- name: GetCommunicationMessagesByListOfConversationIds :many
+SELECT m.*,
+    MAX(m.created_at) AS last_message_time
+FROM pre_go_communication_conversation_99999 c
+    LEFT JOIN pre_go_communication_message_99999 m ON c.id = m.conversation_id
+WHERE c.id = ?
+ORDER BY last_message_time DESC
+LIMIT ? OFFSET ?;
 -- name: GetCommunicationMessagesByUserId :many
 SELECT *
 FROM pre_go_communication_message_99999
 WHERE user_id = ?
 LIMIT ? OFFSET ?;
 -- name: UpdateCommunicationMessage :execresult
-UPDATE pre_go_communication_message_99999
-SET status = ?,
-    updated_at = NOW()
-WHERE id = ?;
+INSERT INTO pre_go_communication_message_read_99999 (message_id, user_id, read_at)
+VALUES (?, ?, NOW());
 -- name: DeleteCommunicationMessage :execresult
 DELETE FROM pre_go_communication_message_99999
 WHERE id = ?;

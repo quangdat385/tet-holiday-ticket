@@ -10,8 +10,9 @@ import (
 type (
 	IOrderService interface {
 		GetOrderByID(ctx context.Context, orderID int64) (out model.OrderOutPut, err error)
-		CreateOrder(ctx context.Context, in vo.CreateOrderRequest) (out model.OrderOutPut, err error)
+		CreateOrder(ctx context.Context, in model.OrderInput) (out bool, err error)
 		UpdateOrder(ctx context.Context, in vo.UpdateOrderRequest) (out model.OrderOutPut, err error)
+		UpdateOrderNotes(ctx context.Context, orderNumber string, orderNotes string) (err error)
 		DeleteOrder(ctx context.Context, orderID int64) (err error)
 	}
 )

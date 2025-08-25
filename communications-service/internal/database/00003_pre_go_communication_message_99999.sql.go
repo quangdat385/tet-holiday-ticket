@@ -86,6 +86,67 @@ func (q *Queries) GetCommunicationMessagesByConversationId(ctx context.Context, 
 	return items, nil
 }
 
+const getCommunicationMessagesByListOfConversationIds = `-- name: GetCommunicationMessagesByListOfConversationIds :many
+SELECT m.id, m.conversation_id, m.user_id, m.status, m.message, m.type, m.created_at, m.updated_at,
+    MAX(m.created_at) AS last_message_time
+FROM pre_go_communication_conversation_99999 c
+    LEFT JOIN pre_go_communication_message_99999 m ON c.id = m.conversation_id
+WHERE c.id = ?
+ORDER BY last_message_time DESC
+LIMIT ? OFFSET ?
+`
+
+type GetCommunicationMessagesByListOfConversationIdsParams struct {
+	ID     int64
+	Limit  int32
+	Offset int32
+}
+
+type GetCommunicationMessagesByListOfConversationIdsRow struct {
+	ID              sql.NullInt64
+	ConversationID  sql.NullInt64
+	UserID          sql.NullInt64
+	Status          sql.NullBool
+	Message         sql.NullString
+	Type            sql.NullString
+	CreatedAt       sql.NullTime
+	UpdatedAt       sql.NullTime
+	LastMessageTime interface{}
+}
+
+func (q *Queries) GetCommunicationMessagesByListOfConversationIds(ctx context.Context, arg GetCommunicationMessagesByListOfConversationIdsParams) ([]GetCommunicationMessagesByListOfConversationIdsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getCommunicationMessagesByListOfConversationIds, arg.ID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetCommunicationMessagesByListOfConversationIdsRow
+	for rows.Next() {
+		var i GetCommunicationMessagesByListOfConversationIdsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ConversationID,
+			&i.UserID,
+			&i.Status,
+			&i.Message,
+			&i.Type,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.LastMessageTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getCommunicationMessagesByUserId = `-- name: GetCommunicationMessagesByUserId :many
 SELECT id, conversation_id, user_id, status, message, type, created_at, updated_at
 FROM pre_go_communication_message_99999
@@ -163,17 +224,15 @@ func (q *Queries) InsertCommunicationMessage(ctx context.Context, arg InsertComm
 }
 
 const updateCommunicationMessage = `-- name: UpdateCommunicationMessage :execresult
-UPDATE pre_go_communication_message_99999
-SET status = ?,
-    updated_at = NOW()
-WHERE id = ?
+INSERT INTO pre_go_communication_message_read_99999 (message_id, user_id, read_at)
+VALUES (?, ?, NOW())
 `
 
 type UpdateCommunicationMessageParams struct {
-	Status sql.NullBool
-	ID     int64
+	MessageID sql.NullInt64
+	UserID    sql.NullInt64
 }
 
 func (q *Queries) UpdateCommunicationMessage(ctx context.Context, arg UpdateCommunicationMessageParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, updateCommunicationMessage, arg.Status, arg.ID)
+	return q.db.ExecContext(ctx, updateCommunicationMessage, arg.MessageID, arg.UserID)
 }

@@ -107,12 +107,39 @@
         const connectionStatus = document.getElementById('connectionStatus');
         const connectButton = document.getElementById('connectButton');
         const disconnectButton = document.getElementById('disconnectButton');
+        const device = "123456789";
+
 
         // Connect to WebSocket server
-        function connect() {
-            // Use the appropriate WebSocket URL based on your server configuration
+        async function connect() {
+            let userLogin = await fetch('http://localhost:8080/ticket-user/api/v1/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Device-Id': device, // Example device ID, adjust as needed
+                },
+                body: JSON.stringify({ user_account: 'cddd4f@yahoo.com', password: '783151Dat@' }) // Example credentials
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("userLogin :", data);
+                    console.log("login success :", data.status === 200 ? "success" : "fail");
+                    return data;
+                })
+                .catch(error => {
+                    console.error('There has been a problem with your fetch operation:', error);
+                });
+            // Use the appropriate WebSocket URL based on your server configuration 
+            const client_id = userLogin.status === 200 ? userLogin.metadata.user.user_id : null
+            const token = userLogin.metadata.access_token
             const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${wsProtocol}//localhost:8084/ws?client_id=1`; // Adjust the client_id as needed
+            const wsUrl = `${wsProtocol}//localhost:8084/ws?client_id=${client_id}&token=${token}&device=${device}`; // Adjust the client_id as needed
 
             socket = new WebSocket(wsUrl);
 
@@ -203,11 +230,13 @@
             e.preventDefault();
             const message = messageInput.value.trim();
             const data = {
-                type: 'Text',
-                data: {
-                    from: 1,
-                    to: 1,
-                    msg: message
+                type: 'Message',
+                message_data: {
+                    conversation_id: 2,
+                    user_id: 1,
+                    status: false,
+                    message: message,
+                    type: 'text'
                 }
             }
 

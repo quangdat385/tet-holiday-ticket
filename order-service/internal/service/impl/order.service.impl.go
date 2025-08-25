@@ -2,14 +2,18 @@ package impl
 
 import (
 	"context"
-	"database/sql"
+	"encoding/json"
+	"fmt"
 	"strconv"
+	"time"
 
+	"github.com/quangdat385/holiday-ticket/order-service/global"
 	"github.com/quangdat385/holiday-ticket/order-service/internal/database"
 	"github.com/quangdat385/holiday-ticket/order-service/internal/model"
 	"github.com/quangdat385/holiday-ticket/order-service/internal/model/mapper"
 	"github.com/quangdat385/holiday-ticket/order-service/internal/vo"
 	"github.com/quangdat385/holiday-ticket/order-service/response"
+	"github.com/segmentio/kafka-go"
 )
 
 type sOrderService struct {
@@ -26,33 +30,39 @@ func (s *sOrderService) GetOrderByID(ctx context.Context, orderID int64) (out mo
 	if err != nil {
 		return out, err
 	}
-	if order == (database.GetOrderByIdRow{}) {
+	if order.ID == 0 {
 		return out, response.ErrNotFoundDataErr
 	}
 	out = mapper.ToOrderDTO(order)
 	return out, nil
 }
 
-func (s *sOrderService) CreateOrder(ctx context.Context, in vo.CreateOrderRequest) (out model.OrderOutPut, err error) {
-	result, err := s.r.InsertOrder(ctx, database.InsertOrderParams{
-		OrderNumber: in.OrderNUmber,
-		OrderAmount: strconv.FormatFloat(float64(in.OrderAmount), 'f', -1, 32),
+func (s *sOrderService) CreateOrder(ctx context.Context, in model.OrderInput) (out bool, err error) {
+	var eventOrder model.OrderEvent
+	eventOrder.Type = model.OrderEventTypeCreateOrder
+	eventOrder.Order = model.OrderEventInput{
+		OrderNumber: in.OrderNumber,
+		OrderAmount: in.OrderAmount,
 		TerminalID:  in.TerminalID,
 		OrderDate:   in.OrderDate,
-		OrderNotes:  sql.NullString{String: "Order-->Pending", Valid: true},
-	})
+		OrderNotes:  "Order-->Pending",
+		OrderItem:   in.OrderItem,
+	}
+	orderEventJSON, err := json.Marshal(eventOrder)
 	if err != nil {
 		return out, err
 	}
-	lastOrderId, err := result.LastInsertId()
+	key := fmt.Sprintf("%s-%s", in.OrderNumber, model.OrderEventTypeCreateOrder)
+	msg := kafka.Message{
+		Key:   []byte(key),
+		Value: orderEventJSON,
+		Time:  time.Now(),
+	}
+	err = global.KafkaProducer.WriteMessages(ctx, msg)
 	if err != nil {
 		return out, err
 	}
-	order, err := s.r.GetOrderById(ctx, int32(lastOrderId))
-	if err != nil {
-		return out, err
-	}
-	out = mapper.ToOrderDTO(order)
+	out = true
 	return out, nil
 }
 func (s *sOrderService) UpdateOrder(ctx context.Context, in vo.UpdateOrderRequest) (out model.OrderOutPut, err error) {
@@ -60,7 +70,7 @@ func (s *sOrderService) UpdateOrder(ctx context.Context, in vo.UpdateOrderReques
 	if err != nil {
 		return out, err
 	}
-	if orderDB == (database.GetOrderByIdRow{}) {
+	if orderDB.ID == 0 {
 		return out, response.ErrNotFoundDataErr
 	}
 	if in.OrderAmount != 0 {
@@ -73,7 +83,7 @@ func (s *sOrderService) UpdateOrder(ctx context.Context, in vo.UpdateOrderReques
 		orderDB.OrderDate = in.OrderDate
 	}
 	if in.OrderNotes != "" {
-		orderDB.OrderNotes = sql.NullString{String: in.OrderNotes, Valid: true}
+		orderDB.OrderNotes = in.OrderNotes
 	}
 	result, err := s.r.UpdateOrder(ctx, database.UpdateOrderParams{
 		ID:          orderDB.ID,
@@ -92,12 +102,29 @@ func (s *sOrderService) UpdateOrder(ctx context.Context, in vo.UpdateOrderReques
 	out = mapper.ToOrderDTO(orderDB)
 	return out, nil
 }
+func (s *sOrderService) UpdateOrderNotes(ctx context.Context, orderNumber string, orderNotes string) (err error) {
+	orderDB, err := s.r.GetOrderByOrderNumber(ctx, orderNumber)
+	if err != nil {
+		return err
+	}
+	if orderDB.ID == 0 {
+		return response.ErrNotFoundDataErr
+	}
+	_, err = s.r.UpdateOrderNote(ctx, database.UpdateOrderNoteParams{
+		OrderNumber: orderNumber,
+		OrderNotes:  orderNotes,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func (s *sOrderService) DeleteOrder(ctx context.Context, orderID int64) (err error) {
 	orderDB, err := s.r.GetOrderById(ctx, int32(orderID))
 	if err != nil {
 		return err
 	}
-	if orderDB == (database.GetOrderByIdRow{}) {
+	if orderDB.ID == 0 {
 		return response.ErrNotFoundDataErr
 	}
 	_, err = s.r.DeleteOrder(ctx, int32(orderID))

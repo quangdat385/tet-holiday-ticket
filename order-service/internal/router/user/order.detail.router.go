@@ -9,12 +9,12 @@ type OrderDetailRouter struct {
 }
 
 func (p *OrderDetailRouter) InitOrderDetailRoter(Router *gin.RouterGroup) {
-	OrderDetailRouterPublicGroup := Router.Group("order/detail")
+	OrderDetailRouterPublicGroup := Router.Group("order-detail")
 	OrderDetailRouterPublicGroup.Use()
 	{
 
 	}
-	OrderDetailRouterPrivateGroup := Router.Group("order/detail")
+	OrderDetailRouterPrivateGroup := Router.Group("order-detail")
 	OrderDetailRouterPrivateGroup.Use()
 	{
 		OrderDetailRouterPrivateGroup.GET("/:id", controller.OrderDetailController.GetOrderDetailByID)

@@ -3,6 +3,7 @@ package user
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/quangdat385/holiday-ticket/communications-service/internal/controller"
+	"github.com/quangdat385/holiday-ticket/communications-service/internal/middleware"
 )
 
 type UserInformationRouter struct {
@@ -16,11 +17,10 @@ func (r *UserInformationRouter) InitUserInformationRouter(Router *gin.RouterGrou
 	}
 
 	UserInformationRouterPrivateGroup := Router.Group("information")
-	UserInformationRouterPrivateGroup.Use()
+	UserInformationRouterPrivateGroup.Use(middleware.AuthenMiddleWare(), middleware.RoleMiddleware("User"))
 	{
 		UserInformationRouterPrivateGroup.GET("get-by-user-id/:user_id", controller.InformationRouter.GetInformationByUserID)
 		UserInformationRouterPrivateGroup.PUT("update-by-user-id/:user_id", controller.InformationRouter.UpdateInformationByUserID)
 		UserInformationRouterPrivateGroup.POST("create", controller.InformationRouter.InsertInformationByUserID)
-		UserInformationRouterPrivateGroup.DELETE("delete/:information_id", controller.InformationRouter.DeleteInformationByID)
 	}
 }

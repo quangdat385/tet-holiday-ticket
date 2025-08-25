@@ -14,6 +14,7 @@ type (
 		GetNotificationsFromUserIDToIsNull(context context.Context) (out []model.NotificationOutput, err error)
 		CreateNotification(context context.Context, input model.NotificationInput) (out model.NotificationOutput, err error)
 		DeleteNotificationById(context context.Context, id int64) (err error)
+		UpdateNotification(context context.Context, input model.UpdateNotificationInput) (out bool, err error)
 	}
 )
 

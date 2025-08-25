@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/quangdat385/holiday-ticket/communications-service/internal/model"
 	"github.com/quangdat385/holiday-ticket/communications-service/internal/service"
@@ -19,6 +21,8 @@ type cInformationController struct {
 // @Accept json
 // @Produce json
 // @Param user_id path int true "User ID"
+// @Param x-client-id header string true "Client ID"
+// @Param x-device-id header string true "Device ID"
 // @Success 200 {object} response.ResponseData{data=model.InformationOutput} "Success"
 // @Failure 400 {object} response.ErrorResponseData "Invalid parameters"
 // @Failure 404 {object} response.ErrorResponseData "Information not found"
@@ -30,13 +34,14 @@ func (c *cInformationController) GetInformationByUserID(ctx *gin.Context) {
 		response.ErrorResponse(ctx, response.ParamInvalidCodeStatus, err.Error())
 		return
 	}
+	fmt.Println("GetInformationByUserID called with params:", params.UserID)
 	out, err := service.InformationService().GetInformationByUserID(ctx.Request.Context(), params.UserID)
 	if err != nil {
 		// Handle error (e.g., log it, return an error response)
 		response.ErrorResponse(ctx, response.ErrorCodeStatus, err.Error())
 		return
 	}
-	response.SuccessResponse(ctx, response.CreateSuccessCodeStatus, out)
+	response.SuccessResponse(ctx, response.SuccessCodeStatus, out)
 }
 
 // @Summary Update information by user ID
@@ -45,6 +50,8 @@ func (c *cInformationController) GetInformationByUserID(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param user_id path int true "User ID"
+// @Param x-client-id header string true "Client ID"
+// @Param x-device-id header string true "Device ID"
 // @Param request body vo.CreateInformationRequest true "Request body"
 // @Success 200 {object} response.ResponseData{data=model.InformationOutput} "Success"
 // @Failure 400 {object} response.ErrorResponseData "Invalid parameters"
@@ -72,7 +79,7 @@ func (c *cInformationController) UpdateInformationByUserID(ctx *gin.Context) {
 		response.ErrorResponse(ctx, response.ErrorCodeStatus, err.Error())
 		return
 	}
-	response.SuccessResponse(ctx, response.CreateSuccessCodeStatus, out)
+	response.SuccessResponse(ctx, response.UpdateSuccessCodeStatus, out)
 }
 
 // @Summary Create information by user ID
@@ -80,6 +87,8 @@ func (c *cInformationController) UpdateInformationByUserID(ctx *gin.Context) {
 // @Tags Information
 // @Accept json
 // @Produce json
+// @Param x-client-id header string true "Client ID"
+// @Param x-device-id header string true "Device ID"
 // @Param request body vo.CreateInformationRequest true "Request body"
 // @Success 200 {object} response.ResponseData{data=model.InformationOutput} "Success
 // @Failure 400 {object} response.ErrorResponseData "Invalid parameters"
@@ -109,6 +118,8 @@ func (c *cInformationController) InsertInformationByUserID(ctx *gin.Context) {
 // @Tags Information
 // @Accept json
 // @Produce json
+// @Param x-client-id header string true "Client ID"
+// @Param x-device-id header string true "Device ID"
 // @Param id path int true "Information ID"
 // @Success 200 {object} response.ResponseData{data=string} "Success"
 // @Failure 400 {object} response.ErrorResponseData "Invalid parameters"
@@ -126,5 +137,5 @@ func (c *cInformationController) DeleteInformationByID(ctx *gin.Context) {
 		response.ErrorResponse(ctx, response.ErrorCodeStatus, err.Error())
 		return
 	}
-	response.SuccessResponse(ctx, response.CreateSuccessCodeStatus, out)
+	response.SuccessResponse(ctx, response.DeleteSuccessCodeStatus, out)
 }

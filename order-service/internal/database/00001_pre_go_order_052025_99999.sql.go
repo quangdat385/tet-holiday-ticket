@@ -8,6 +8,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"time"
 )
 
@@ -25,8 +26,11 @@ SELECT id,
     order_number,
     order_amount,
     terminal_id,
+    station_code,
+    user_id,
     order_date,
     order_notes,
+    order_item,
     created_at,
     updated_at
 FROM pre_go_order_052025_99999
@@ -38,8 +42,11 @@ type GetOrderByIdRow struct {
 	OrderNumber string
 	OrderAmount string
 	TerminalID  int64
+	StationCode string
+	UserID      int64
 	OrderDate   time.Time
-	OrderNotes  sql.NullString
+	OrderNotes  string
+	OrderItem   json.RawMessage
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -52,8 +59,60 @@ func (q *Queries) GetOrderById(ctx context.Context, id int32) (GetOrderByIdRow, 
 		&i.OrderNumber,
 		&i.OrderAmount,
 		&i.TerminalID,
+		&i.StationCode,
+		&i.UserID,
 		&i.OrderDate,
 		&i.OrderNotes,
+		&i.OrderItem,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getOrderByOrderNumber = `-- name: GetOrderByOrderNumber :one
+SELECT id,
+    order_number,
+    order_amount,
+    terminal_id,
+    user_id,
+    station_code,
+    order_date,
+    order_notes,
+    order_item,
+    created_at,
+    updated_at
+FROM pre_go_order_052025_99999
+WHERE order_number = ?
+`
+
+type GetOrderByOrderNumberRow struct {
+	ID          int32
+	OrderNumber string
+	OrderAmount string
+	TerminalID  int64
+	UserID      int64
+	StationCode string
+	OrderDate   time.Time
+	OrderNotes  string
+	OrderItem   json.RawMessage
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func (q *Queries) GetOrderByOrderNumber(ctx context.Context, orderNumber string) (GetOrderByOrderNumberRow, error) {
+	row := q.db.QueryRowContext(ctx, getOrderByOrderNumber, orderNumber)
+	var i GetOrderByOrderNumberRow
+	err := row.Scan(
+		&i.ID,
+		&i.OrderNumber,
+		&i.OrderAmount,
+		&i.TerminalID,
+		&i.UserID,
+		&i.StationCode,
+		&i.OrderDate,
+		&i.OrderNotes,
+		&i.OrderItem,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -63,31 +122,40 @@ func (q *Queries) GetOrderById(ctx context.Context, id int32) (GetOrderByIdRow, 
 const insertOrder = `-- name: InsertOrder :execresult
 INSERT INTO pre_go_order_052025_99999 (
         order_number,
+        user_id,
+        station_code,
         order_amount,
         terminal_id,
         order_date,
         order_notes,
+        order_item,
         created_at,
         updated_at
     )
-VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
 `
 
 type InsertOrderParams struct {
 	OrderNumber string
+	UserID      int64
+	StationCode string
 	OrderAmount string
 	TerminalID  int64
 	OrderDate   time.Time
-	OrderNotes  sql.NullString
+	OrderNotes  string
+	OrderItem   json.RawMessage
 }
 
 func (q *Queries) InsertOrder(ctx context.Context, arg InsertOrderParams) (sql.Result, error) {
 	return q.db.ExecContext(ctx, insertOrder,
 		arg.OrderNumber,
+		arg.UserID,
+		arg.StationCode,
 		arg.OrderAmount,
 		arg.TerminalID,
 		arg.OrderDate,
 		arg.OrderNotes,
+		arg.OrderItem,
 	)
 }
 
@@ -97,6 +165,7 @@ SET order_amount = ?,
     terminal_id = ?,
     order_date = ?,
     order_notes = ?,
+    order_item = ?,
     updated_at = NOW()
 WHERE id = ?
 `
@@ -105,7 +174,8 @@ type UpdateOrderParams struct {
 	OrderAmount string
 	TerminalID  int64
 	OrderDate   time.Time
-	OrderNotes  sql.NullString
+	OrderNotes  string
+	OrderItem   json.RawMessage
 	ID          int32
 }
 
@@ -115,6 +185,22 @@ func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) (sql.R
 		arg.TerminalID,
 		arg.OrderDate,
 		arg.OrderNotes,
+		arg.OrderItem,
 		arg.ID,
 	)
+}
+
+const updateOrderNote = `-- name: UpdateOrderNote :execresult
+UPDATE pre_go_order_052025_99999
+SET order_notes = ?
+WHERE order_number = ?
+`
+
+type UpdateOrderNoteParams struct {
+	OrderNotes  string
+	OrderNumber string
+}
+
+func (q *Queries) UpdateOrderNote(ctx context.Context, arg UpdateOrderNoteParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, updateOrderNote, arg.OrderNotes, arg.OrderNumber)
 }

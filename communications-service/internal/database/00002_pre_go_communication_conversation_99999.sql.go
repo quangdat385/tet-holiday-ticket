@@ -12,18 +12,22 @@ import (
 )
 
 const addUserToCommunicationConversation = `-- name: AddUserToCommunicationConversation :execresult
-UPDATE pre_go_communication_conversation_99999
-SET user_ids = JSON_ARRAY_APPEND(user_ids, '$', ?)
-WHERE id = ?
+INSERT INTO pre_go_communication_conversation_users_99999 (
+        conversation_id,
+        user_id,
+        nick_name
+    )
+VALUES (?, ?, ?)
 `
 
 type AddUserToCommunicationConversationParams struct {
-	JSONARRAYAPPEND interface{}
-	ID              int64
+	ConversationID int64
+	UserID         int64
+	NickName       sql.NullString
 }
 
 func (q *Queries) AddUserToCommunicationConversation(ctx context.Context, arg AddUserToCommunicationConversationParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, addUserToCommunicationConversation, arg.JSONARRAYAPPEND, arg.ID)
+	return q.db.ExecContext(ctx, addUserToCommunicationConversation, arg.ConversationID, arg.UserID, arg.NickName)
 }
 
 const deleteCommunicationConversation = `-- name: DeleteCommunicationConversation :execresult
@@ -35,24 +39,58 @@ func (q *Queries) DeleteCommunicationConversation(ctx context.Context, id int64)
 	return q.db.ExecContext(ctx, deleteCommunicationConversation, id)
 }
 
-const getCommunicationConversationById = `-- name: GetCommunicationConversationById :one
-SELECT id,
-    title,
-    user_ids,
-    description,
-    type,
-    background,
-    emoji,
-    is_deleted,
-    created_at,
-    updated_at
-FROM pre_go_communication_conversation_99999
-WHERE id = ?
+const getCommunicationConversationByIDIsDeleted = `-- name: GetCommunicationConversationByIDIsDeleted :one
+SELECT c.id,
+    c.title,
+    JSON_ARRAYAGG(
+        JSON_OBJECT(
+            'user_id',
+            u.user_id,
+            'nick_name',
+            u.nick_name,
+            'is_deleted',
+            u.is_deleted
+        )
+    ) AS user_ids,
+    c.description,
+    c.type,
+    c.background,
+    c.emoji,
+    c.is_deleted,
+    c.created_at,
+    c.updated_at
+FROM pre_go_communication_conversation_99999 AS c
+    LEFT JOIN pre_go_communication_conversation_users_99999 AS u ON c.id = u.conversation_id
+    AND u.is_deleted = false
+WHERE c.id = ?
+    AND c.is_deleted = true
+GROUP BY c.id,
+    c.title,
+    c.description,
+    c.type,
+    c.background,
+    c.emoji,
+    c.is_deleted,
+    c.created_at,
+    c.updated_at
 `
 
-func (q *Queries) GetCommunicationConversationById(ctx context.Context, id int64) (PreGoCommunicationConversation99999, error) {
-	row := q.db.QueryRowContext(ctx, getCommunicationConversationById, id)
-	var i PreGoCommunicationConversation99999
+type GetCommunicationConversationByIDIsDeletedRow struct {
+	ID          int64
+	Title       sql.NullString
+	UserIds     json.RawMessage
+	Description sql.NullString
+	Type        sql.NullString
+	Background  sql.NullString
+	Emoji       sql.NullString
+	IsDeleted   sql.NullBool
+	CreatedAt   sql.NullTime
+	UpdatedAt   sql.NullTime
+}
+
+func (q *Queries) GetCommunicationConversationByIDIsDeleted(ctx context.Context, id int64) (GetCommunicationConversationByIDIsDeletedRow, error) {
+	row := q.db.QueryRowContext(ctx, getCommunicationConversationByIDIsDeleted, id)
+	var i GetCommunicationConversationByIDIsDeletedRow
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
@@ -68,37 +106,246 @@ func (q *Queries) GetCommunicationConversationById(ctx context.Context, id int64
 	return i, err
 }
 
-const getCommunicationConversationsByUserId = `-- name: GetCommunicationConversationsByUserId :many
-SELECT id,
-    title,
-    user_ids,
-    description,
-    type,
-    background,
-    emoji,
-    is_deleted,
-    created_at,
-    updated_at
-FROM pre_go_communication_conversation_99999
-WHERE JSON_CONTAINS(user_ids, JSON_QUOTE(?), '$')
+const getCommunicationConversationById = `-- name: GetCommunicationConversationById :one
+SELECT c.id,
+    c.title,
+    JSON_ARRAYAGG(
+        JSON_OBJECT(
+            'user_id',
+            u.user_id,
+            'nick_name',
+            u.nick_name,
+            'is_deleted',
+            u.is_deleted
+        )
+    ) AS user_ids,
+    c.description,
+    c.type,
+    c.background,
+    c.emoji,
+    c.is_deleted,
+    c.created_at,
+    c.updated_at
+FROM pre_go_communication_conversation_99999 AS c
+    LEFT JOIN pre_go_communication_conversation_users_99999 AS u ON c.id = u.conversation_id
+    AND u.is_deleted = false
+WHERE c.id = ?
+    AND c.is_deleted = false
+GROUP BY c.id,
+    c.title,
+    c.description,
+    c.type,
+    c.background,
+    c.emoji,
+    c.is_deleted,
+    c.created_at,
+    c.updated_at
+`
+
+type GetCommunicationConversationByIdRow struct {
+	ID          int64
+	Title       sql.NullString
+	UserIds     json.RawMessage
+	Description sql.NullString
+	Type        sql.NullString
+	Background  sql.NullString
+	Emoji       sql.NullString
+	IsDeleted   sql.NullBool
+	CreatedAt   sql.NullTime
+	UpdatedAt   sql.NullTime
+}
+
+func (q *Queries) GetCommunicationConversationById(ctx context.Context, id int64) (GetCommunicationConversationByIdRow, error) {
+	row := q.db.QueryRowContext(ctx, getCommunicationConversationById, id)
+	var i GetCommunicationConversationByIdRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.UserIds,
+		&i.Description,
+		&i.Type,
+		&i.Background,
+		&i.Emoji,
+		&i.IsDeleted,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getListCommunicationConversations = `-- name: GetListCommunicationConversations :many
+SELECT c.id,
+    c.title,
+    JSON_ARRAYAGG(
+        JSON_OBJECT(
+            'user_id',
+            u.user_id,
+            'nick_name',
+            u.nick_name,
+            'is_deleted',
+            u.is_deleted,
+            'last_message',
+            u.last_message,
+            'updated_at',
+            u.updated_at
+        )
+    ) AS user_ids,
+    c.description,
+    c.type,
+    c.background,
+    c.emoji,
+    c.is_deleted,
+    c.created_at,
+    c.updated_at
+FROM pre_go_communication_conversation_99999 AS c
+    LEFT JOIN pre_go_communication_conversation_users_99999 AS u ON c.id = u.conversation_id
+    AND u.is_deleted = false
+WHERE c.id IN (
+        SELECT conversation_id
+        FROM pre_go_communication_conversation_users_99999 AS t
+        WHERE t.user_id = ?
+            AND t.is_deleted = false
+    )
+    AND c.is_deleted = false
+GROUP BY c.id,
+    c.title,
+    c.description,
+    c.type,
+    c.background,
+    c.emoji,
+    c.is_deleted,
+    c.created_at,
+    c.updated_at
 LIMIT ? OFFSET ?
 `
 
-type GetCommunicationConversationsByUserIdParams struct {
-	JSONQUOTE string
-	Limit     int32
-	Offset    int32
+type GetListCommunicationConversationsParams struct {
+	UserID int64
+	Limit  int32
+	Offset int32
 }
 
-func (q *Queries) GetCommunicationConversationsByUserId(ctx context.Context, arg GetCommunicationConversationsByUserIdParams) ([]PreGoCommunicationConversation99999, error) {
-	rows, err := q.db.QueryContext(ctx, getCommunicationConversationsByUserId, arg.JSONQUOTE, arg.Limit, arg.Offset)
+type GetListCommunicationConversationsRow struct {
+	ID          int64
+	Title       sql.NullString
+	UserIds     json.RawMessage
+	Description sql.NullString
+	Type        sql.NullString
+	Background  sql.NullString
+	Emoji       sql.NullString
+	IsDeleted   sql.NullBool
+	CreatedAt   sql.NullTime
+	UpdatedAt   sql.NullTime
+}
+
+func (q *Queries) GetListCommunicationConversations(ctx context.Context, arg GetListCommunicationConversationsParams) ([]GetListCommunicationConversationsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getListCommunicationConversations, arg.UserID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []PreGoCommunicationConversation99999
+	var items []GetListCommunicationConversationsRow
 	for rows.Next() {
-		var i PreGoCommunicationConversation99999
+		var i GetListCommunicationConversationsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.UserIds,
+			&i.Description,
+			&i.Type,
+			&i.Background,
+			&i.Emoji,
+			&i.IsDeleted,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getListCommunicationConversationsIsDeleted = `-- name: GetListCommunicationConversationsIsDeleted :many
+SELECT c.id,
+    c.title,
+    JSON_ARRAYAGG(
+        JSON_OBJECT(
+            'user_id',
+            u.user_id,
+            'nick_name',
+            u.nick_name,
+            'is_deleted',
+            u.is_deleted,
+            'last_message',
+            u.last_message,
+            'updated_at',
+            u.updated_at
+        )
+    ) AS user_ids,
+    c.description,
+    c.type,
+    c.background,
+    c.emoji,
+    c.is_deleted,
+    c.created_at,
+    c.updated_at
+FROM pre_go_communication_conversation_99999 AS c
+    LEFT JOIN pre_go_communication_conversation_users_99999 AS u ON c.id = u.conversation_id
+    AND u.is_deleted = false
+WHERE c.id IN (
+        select conversation_id
+        from pre_go_communication_conversation_users_99999 AS t
+        WHERE t.user_id = ?
+            AND t.is_deleted = false
+    )
+    AND c.is_deleted = true
+GROUP BY c.id,
+    c.title,
+    c.description,
+    c.type,
+    c.background,
+    c.emoji,
+    c.is_deleted,
+    c.created_at,
+    c.updated_at
+LIMIT ? OFFSET ?
+`
+
+type GetListCommunicationConversationsIsDeletedParams struct {
+	UserID int64
+	Limit  int32
+	Offset int32
+}
+
+type GetListCommunicationConversationsIsDeletedRow struct {
+	ID          int64
+	Title       sql.NullString
+	UserIds     json.RawMessage
+	Description sql.NullString
+	Type        sql.NullString
+	Background  sql.NullString
+	Emoji       sql.NullString
+	IsDeleted   sql.NullBool
+	CreatedAt   sql.NullTime
+	UpdatedAt   sql.NullTime
+}
+
+func (q *Queries) GetListCommunicationConversationsIsDeleted(ctx context.Context, arg GetListCommunicationConversationsIsDeletedParams) ([]GetListCommunicationConversationsIsDeletedRow, error) {
+	rows, err := q.db.QueryContext(ctx, getListCommunicationConversationsIsDeleted, arg.UserID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetListCommunicationConversationsIsDeletedRow
+	for rows.Next() {
+		var i GetListCommunicationConversationsIsDeletedRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
@@ -127,7 +374,6 @@ func (q *Queries) GetCommunicationConversationsByUserId(ctx context.Context, arg
 const insertCommunicationConversation = `-- name: InsertCommunicationConversation :execresult
 INSERT INTO pre_go_communication_conversation_99999 (
         title,
-        user_ids,
         description,
         type,
         background,
@@ -143,7 +389,6 @@ VALUES (
         ?,
         ?,
         ?,
-        ?,
         NOW(),
         NOW()
     )
@@ -151,7 +396,6 @@ VALUES (
 
 type InsertCommunicationConversationParams struct {
 	Title       sql.NullString
-	UserIds     json.RawMessage
 	Description sql.NullString
 	Type        sql.NullString
 	Background  sql.NullString
@@ -162,7 +406,6 @@ type InsertCommunicationConversationParams struct {
 func (q *Queries) InsertCommunicationConversation(ctx context.Context, arg InsertCommunicationConversationParams) (sql.Result, error) {
 	return q.db.ExecContext(ctx, insertCommunicationConversation,
 		arg.Title,
-		arg.UserIds,
 		arg.Description,
 		arg.Type,
 		arg.Background,
@@ -172,27 +415,36 @@ func (q *Queries) InsertCommunicationConversation(ctx context.Context, arg Inser
 }
 
 const removeUserFromCommunicationConversation = `-- name: RemoveUserFromCommunicationConversation :execresult
-UPDATE pre_go_communication_conversation_99999
-SET user_ids = JSON_REMOVE(
-        user_ids,
-        JSON_UNQUOTE(JSON_SEARCH(user_ids, 'one', ?))
-    )
-WHERE id = ?
+UPDATE pre_go_communication_conversation_users_99999
+SET is_deleted = true,
+    updated_at = NOW()
+WHERE conversation_id = ?
+    AND user_id = ?
 `
 
 type RemoveUserFromCommunicationConversationParams struct {
-	JSONSEARCH string
-	ID         int64
+	ConversationID int64
+	UserID         int64
 }
 
 func (q *Queries) RemoveUserFromCommunicationConversation(ctx context.Context, arg RemoveUserFromCommunicationConversationParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, removeUserFromCommunicationConversation, arg.JSONSEARCH, arg.ID)
+	return q.db.ExecContext(ctx, removeUserFromCommunicationConversation, arg.ConversationID, arg.UserID)
+}
+
+const softDeleteCommunicationConversation = `-- name: SoftDeleteCommunicationConversation :execresult
+UPDATE pre_go_communication_conversation_99999
+SET is_deleted = true,
+    updated_at = NOW()
+WHERE id = ?
+`
+
+func (q *Queries) SoftDeleteCommunicationConversation(ctx context.Context, id int64) (sql.Result, error) {
+	return q.db.ExecContext(ctx, softDeleteCommunicationConversation, id)
 }
 
 const updateCommunicationConversation = `-- name: UpdateCommunicationConversation :execresult
 UPDATE pre_go_communication_conversation_99999
 SET title = ?,
-    user_ids = JSON_ARRAY_APPEND(user_ids, '$', ?),
     description = ?,
     type = ?,
     background = ?,
@@ -203,20 +455,18 @@ WHERE id = ?
 `
 
 type UpdateCommunicationConversationParams struct {
-	Title           sql.NullString
-	JSONARRAYAPPEND interface{}
-	Description     sql.NullString
-	Type            sql.NullString
-	Background      sql.NullString
-	Emoji           sql.NullString
-	IsDeleted       sql.NullBool
-	ID              int64
+	Title       sql.NullString
+	Description sql.NullString
+	Type        sql.NullString
+	Background  sql.NullString
+	Emoji       sql.NullString
+	IsDeleted   sql.NullBool
+	ID          int64
 }
 
 func (q *Queries) UpdateCommunicationConversation(ctx context.Context, arg UpdateCommunicationConversationParams) (sql.Result, error) {
 	return q.db.ExecContext(ctx, updateCommunicationConversation,
 		arg.Title,
-		arg.JSONARRAYAPPEND,
 		arg.Description,
 		arg.Type,
 		arg.Background,
@@ -224,4 +474,22 @@ func (q *Queries) UpdateCommunicationConversation(ctx context.Context, arg Updat
 		arg.IsDeleted,
 		arg.ID,
 	)
+}
+
+const updateLastMessageInCommunicationConversation = `-- name: UpdateLastMessageInCommunicationConversation :execresult
+UPDATE pre_go_communication_conversation_users_99999
+SET last_message = ?,
+    updated_at = NOW()
+WHERE conversation_id = ?
+    AND user_id = ?
+`
+
+type UpdateLastMessageInCommunicationConversationParams struct {
+	LastMessage    sql.NullString
+	ConversationID int64
+	UserID         int64
+}
+
+func (q *Queries) UpdateLastMessageInCommunicationConversation(ctx context.Context, arg UpdateLastMessageInCommunicationConversationParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, updateLastMessageInCommunicationConversation, arg.LastMessage, arg.ConversationID, arg.UserID)
 }

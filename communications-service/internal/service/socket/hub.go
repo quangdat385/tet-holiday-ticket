@@ -47,6 +47,7 @@ func (h *Hub) Run() {
 				go service.InformationService().UpdateInformationByUserID(context.Background(), model.InfomationInput{
 					UserID: int64(client.Client_Id),
 					Status: false,
+					Value:  "",
 				})
 				go service.InformationService().DeleteUserConnected(context.Background(), int64(client.Client_Id))
 				delete(h.Clients, client)
@@ -61,17 +62,6 @@ func (h *Hub) Run() {
 			case int64:
 				for client := range h.Clients {
 					if int64(client.Client_Id) == ids {
-						select {
-						case client.Send <- message:
-						default:
-							close(client.Send)
-							delete(h.Clients, client)
-						}
-					}
-				}
-			case []int64:
-				for client := range h.Clients {
-					if slices.Contains(ids, int64(client.Client_Id)) {
 						select {
 						case client.Send <- message:
 						default:
@@ -97,8 +87,13 @@ func (h *Hub) Run() {
 				log.Println("Error handling message:", err)
 				break
 			}
+			// Extract int64 user IDs from []model.UserIDS
+			var userIDInts []int64
+			for _, u := range UserIDS {
+				userIDInts = append(userIDInts, u.UserID)
+			}
 			for client := range h.Clients {
-				if slices.Contains(UserIDS, int64(client.Client_Id)) {
+				if slices.Contains(userIDInts, int64(client.Client_Id)) {
 					select {
 					case client.Send <- message:
 					default:
@@ -110,7 +105,7 @@ func (h *Hub) Run() {
 		}
 	}
 }
-func handleMessage(message []byte) (out []int64, err error) {
+func handleMessage(message []byte) (out []model.UserIDS, err error) {
 	fmt.Println("Handle message received")
 	var payload Message
 	err = json.Unmarshal(message, &payload)
@@ -134,6 +129,13 @@ func handleMessage(message []byte) (out []int64, err error) {
 		return nil, err
 	}
 	UserIDS := conversation.UserIDS
+	var filteredUserIDS []model.UserIDS
+	for _, u := range UserIDS {
+		if u.UserID != int64(payload.MessageData.UserID) {
+			filteredUserIDS = append(filteredUserIDS, u)
+		}
+	}
+	UserIDS = filteredUserIDS
 	return UserIDS, nil
 }
 func handleNotification(message []byte) (out any, err error) {
@@ -142,6 +144,15 @@ func handleNotification(message []byte) (out any, err error) {
 	err = json.Unmarshal(message, &payload)
 	if err != nil {
 		log.Println("error: ", err)
+		return nil, err
+	}
+	_, err = service.NotificationService().CreateNotification(context.Background(), model.NotificationInput{
+		From:    payload.NotificationData.From,
+		To:      payload.NotificationData.To,
+		Content: payload.NotificationData.Content,
+	})
+	if err != nil {
+		log.Println("error creating notification: ", err)
 		return nil, err
 	}
 	out = payload.NotificationData.To

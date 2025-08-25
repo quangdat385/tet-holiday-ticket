@@ -1,6 +1,7 @@
 package mapper
 
 import (
+	"encoding/json"
 	"strconv"
 
 	"github.com/quangdat385/holiday-ticket/order-service/internal/database"
@@ -16,8 +17,18 @@ func ToOrderDTO(in database.GetOrderByIdRow) (out model.OrderOutPut) {
 	} else {
 		out.OrderAmount = float32(orderAmount)
 	}
+	var orderItem model.OrderItem
+	err = json.Unmarshal(in.OrderItem, &orderItem)
+	if err != nil {
+		orderItem = model.OrderItem{}
+	}
+	out.StationCode = in.StationCode
+	out.UserID = in.UserID
 	out.TerminalID = in.TerminalID
 	out.OrderDate = in.OrderDate
+	out.OrderNotes = in.OrderNotes
+	out.OrderItem = orderItem
 	out.UpdatedAt = in.UpdatedAt
+
 	return out
 }

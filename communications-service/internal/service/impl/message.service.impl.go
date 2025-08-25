@@ -80,23 +80,15 @@ func (s *sMessageSevice) CreateMessage(context context.Context, in model.Message
 	out = mapper.ToMessageDTO(newMessage)
 	return out, nil
 }
-func (s *sMessageSevice) UpdateMessageStatus(context context.Context, status bool, ID int64) (out model.MessageOutput, err error) {
-	message, err := s.r.GetCommunicationMessageById(context, ID)
-	if err != nil {
-		return out, err
-	}
-	if message.ID == 0 {
-		return out, errors.New("message not found")
-	}
+func (s *sMessageSevice) UpdateMessageStatus(context context.Context, message_id int64, user_id int64) (out bool, err error) {
 	_, err = s.r.UpdateCommunicationMessage(context, database.UpdateCommunicationMessageParams{
-		ID:     ID,
-		Status: sql.NullBool{Bool: status, Valid: true},
+		MessageID: sql.NullInt64{Int64: message_id, Valid: true},
+		UserID:    sql.NullInt64{Int64: user_id, Valid: true},
 	})
 	if err != nil {
 		return out, err
 	}
-	message.Status = sql.NullBool{Bool: status, Valid: true}
-	out = mapper.ToMessageDTO(message)
+	out = true
 	return out, nil
 }
 func (s *sMessageSevice) DeleteMessage(context context.Context, ID int64) (err error) {

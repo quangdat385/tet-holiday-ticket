@@ -14,12 +14,29 @@ type PreGoCommunicationConversation99999 struct {
 	// Primary key
 	ID          int64
 	Title       sql.NullString
-	UserIds     json.RawMessage
 	Description sql.NullString
 	Type        sql.NullString
 	Background  sql.NullString
 	Emoji       sql.NullString
 	IsDeleted   sql.NullBool
+	CreatedAt   sql.NullTime
+	UpdatedAt   sql.NullTime
+}
+
+// Pre-go communication conversation users table
+type PreGoCommunicationConversationUsers99999 struct {
+	// Primary key
+	ID int64
+	// Conversation ID
+	ConversationID int64
+	// User ID
+	UserID int64
+	// User Nickname
+	NickName sql.NullString
+	// Is the user deleted from the conversation
+	IsDeleted sql.NullBool
+	// Last message sent by the user in the conversation
+	LastMessage sql.NullString
 	CreatedAt   sql.NullTime
 	UpdatedAt   sql.NullTime
 }
@@ -30,7 +47,7 @@ type PreGoCommunicationInfo99999 struct {
 	ID        int64
 	UserID    int64
 	Status    sql.NullBool
-	Value     string
+	Value     sql.NullString
 	Type      sql.NullString
 	CreatedAt sql.NullTime
 	UpdatedAt sql.NullTime
@@ -49,12 +66,24 @@ type PreGoCommunicationMessage99999 struct {
 	UpdatedAt      sql.NullTime
 }
 
+type PreGoCommunicationMessageRead99999 struct {
+	MessageID sql.NullInt64
+	UserID    sql.NullInt64
+	ReadAt    sql.NullTime
+}
+
 // notification table
 type PreGoCommunicationNotification99999 struct {
 	ID        int64
 	From      int64
-	To        json.RawMessage
+	To        sql.NullInt64
 	Content   json.RawMessage
 	CreatedAt sql.NullTime
 	UpdatedAt sql.NullTime
+}
+
+type PreGoCommunicationNotificationUser99999 struct {
+	UserID         int64
+	NotificationID int64
+	ReadAt         sql.NullTime
 }

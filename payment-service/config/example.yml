@@ -1,0 +1,30 @@
+server:
+  port: 11111
+  mode: "dev"
+  salt: "123456"
+logger:
+  loglevel: debug
+  filelogname: ./storages/logs/dev.001.log
+  maxsize: 500
+  maxbackups: 3
+  maxage: 28
+  compress: true
+
+mysql:
+  host: mysql_shopdevgo
+  port: 3308
+  username: root
+  password: test_password
+  dbName: ticket_order
+  maxIdleConns: 10
+  maxOpenConns: 100
+  connMaxLifetime: 3600
+redis:
+  host: redis_shopdevgo
+  port: 6381
+  password: test_password
+  database: 0
+  maxRetries: 20
+kafka:
+  host: kafka_shopdevgo
+  port: 9193
