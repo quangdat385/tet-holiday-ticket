@@ -67,6 +67,16 @@ func (s *sSeatReservation) GetSeatReservationByTrainId(context context.Context, 
 	return out, nil
 }
 func (s *sSeatReservation) CreateSeatReservation(context context.Context, in model.SeatReservationCreateInput) (out model.SeatReservationOutput, err error) {
+	seatDB, err := s.r.GetSeatById(context, in.SeatID)
+	if err != nil {
+		return out, err
+	}
+	if seatDB.ID == 0 {
+		return out, response.ErrSeatNotFoundErr
+	}
+	if seatDB.Status == 1 {
+		return out, response.ErrSeatAlreadyReservedErr
+	}
 	result, err := s.r.InsertSeatReservation(context, database.InsertSeatReservationParams{
 		SeatID:        in.SeatID,
 		TrainID:       in.TrainID,

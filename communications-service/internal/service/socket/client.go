@@ -46,7 +46,7 @@ type MessageData struct {
 }
 type NotificationData struct {
 	From    int64 `json:"from"`
-	To      any   `json:"to"`
+	To      int64 `json:"to,omitempty"`
 	Content any   `json:"content"`
 }
 
@@ -107,25 +107,10 @@ func (c *Client) ReadPump(rdb *redis.Client) {
 // application ensures that there is at most one writer to a connection by
 // executing all writes from this goroutine.
 func (c *Client) WritePump(rdb *redis.Client) {
-	pubsub := rdb.Subscribe(context.Background(), "notification")
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
 		c.Conn.Close()
-		pubsub.Close()
-	}()
-	go func() {
-		for msg := range pubsub.Channel() {
-			log.Printf("Received message from Redis: %s", msg.Payload)
-
-			var payload Message
-			json.Unmarshal([]byte(msg.Payload), &payload)
-			if payload.Type == "Message" {
-				c.Hub.Message <- []byte(msg.Payload)
-				continue
-			}
-			c.Hub.Notification <- []byte(msg.Payload)
-		}
 	}()
 	for {
 		select {

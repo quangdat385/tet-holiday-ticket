@@ -3,7 +3,6 @@ package impl
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -36,11 +35,73 @@ func (s *sOrderService) GetOrderByID(ctx context.Context, orderID int64) (out mo
 	out = mapper.ToOrderDTO(order)
 	return out, nil
 }
-
+func (s *sOrderService) GetOrderByOrderNumber(ctx context.Context, orderNumber string) (out model.OrderOutPut, err error) {
+	order, err := s.r.GetOrderByOrderNumber(ctx, orderNumber)
+	if err != nil {
+		return out, err
+	}
+	if order.ID == 0 {
+		return out, response.ErrNotFoundDataErr
+	}
+	out = mapper.ToOrderDTO(database.GetOrderByIdRow{
+		ID:          order.ID,
+		StationCode: order.StationCode,
+		UserID:      order.UserID,
+		OrderNumber: order.OrderNumber,
+		OrderAmount: order.OrderAmount,
+		TerminalID:  order.TerminalID,
+		OrderDate:   order.OrderDate,
+		OrderNotes:  order.OrderNotes,
+		OrderItem:   order.OrderItem,
+		CreatedAt:   order.CreatedAt,
+		UpdatedAt:   order.UpdatedAt,
+	})
+	return out, nil
+}
+func (s *sOrderService) GetOrdersByUserId(ctx context.Context, userID int64, page int32, Limit int32) (out []model.OrderOutPut, err error) {
+	orders, err := s.r.GetOrdersByUserId(ctx, database.GetOrdersByUserIdParams{
+		UserID: userID,
+		Limit:  Limit,
+		Offset: (page - 1) * Limit,
+	})
+	if err != nil {
+		return out, err
+	}
+	for _, order := range orders {
+		out = append(out, mapper.ToOrderDTO(database.GetOrderByIdRow{
+			ID:          order.ID,
+			StationCode: order.StationCode,
+			UserID:      order.UserID,
+			OrderNumber: order.OrderNumber,
+			OrderAmount: order.OrderAmount,
+			TerminalID:  order.TerminalID,
+			OrderDate:   order.OrderDate,
+			OrderNotes:  order.OrderNotes,
+			OrderItem:   order.OrderItem,
+			CreatedAt:   order.CreatedAt,
+			UpdatedAt:   order.UpdatedAt,
+		}))
+	}
+	return out, nil
+}
 func (s *sOrderService) CreateOrder(ctx context.Context, in model.OrderInput) (out bool, err error) {
+	before := in.OrderDate.Add(-10 * time.Second)
+	checkIdempotent, err := s.r.CheckIdempotencyOrder(ctx, database.CheckIdempotencyOrderParams{
+		UserID:      in.UserID,
+		OrderDate:   before,
+		OrderDate_2: in.OrderDate,
+	})
+	if err != nil {
+		return out, err
+	}
+	if len(checkIdempotent) > 0 {
+		return out, response.ErrDuplicateDataErr
+	}
 	var eventOrder model.OrderEvent
 	eventOrder.Type = model.OrderEventTypeCreateOrder
 	eventOrder.Order = model.OrderEventInput{
+		StationCode: in.StationCode,
+		UserID:      in.UserID,
 		OrderNumber: in.OrderNumber,
 		OrderAmount: in.OrderAmount,
 		TerminalID:  in.TerminalID,
@@ -52,7 +113,7 @@ func (s *sOrderService) CreateOrder(ctx context.Context, in model.OrderInput) (o
 	if err != nil {
 		return out, err
 	}
-	key := fmt.Sprintf("%s-%s", in.OrderNumber, model.OrderEventTypeCreateOrder)
+	key := model.OrderEventTypeCreateOrder
 	msg := kafka.Message{
 		Key:   []byte(key),
 		Value: orderEventJSON,
@@ -85,12 +146,16 @@ func (s *sOrderService) UpdateOrder(ctx context.Context, in vo.UpdateOrderReques
 	if in.OrderNotes != "" {
 		orderDB.OrderNotes = in.OrderNotes
 	}
+	if in.StationCode != "" {
+		orderDB.StationCode = in.StationCode
+	}
 	result, err := s.r.UpdateOrder(ctx, database.UpdateOrderParams{
 		ID:          orderDB.ID,
 		OrderAmount: orderDB.OrderAmount,
 		TerminalID:  orderDB.TerminalID,
 		OrderDate:   orderDB.OrderDate,
 		OrderNotes:  orderDB.OrderNotes,
+		StationCode: orderDB.StationCode,
 	})
 	if err != nil {
 		return out, err

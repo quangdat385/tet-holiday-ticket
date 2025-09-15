@@ -50,4 +50,5 @@ var (
 	ErrCreateTicketSegmentPriceErr   = errors.New("create ticket segment price error") // Type of internal error
 	ErrUpdateTicketSegmentPriceErr   = errors.New("update ticket segment price error") // Type of internal error
 	ErrNotFoundDataErr               = errors.New("not found data")                    // Type of internal error
+	ErrSeatAlreadyReservedErr        = errors.New("seat already reserved")             // Type of internal error
 )

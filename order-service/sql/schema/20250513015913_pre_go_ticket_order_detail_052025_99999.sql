@@ -18,8 +18,11 @@ CREATE TABLE IF NOT EXISTS pre_go_ticket_order_detail_052025_99999 (
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Last update time',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
     PRIMARY KEY (`id`) USING BTREE,
-    KEY `ticket_item_id` (`ticket_item_id`)
-);
+    KEY `ticket_item_id` (`ticket_item_id`),
+    KEY `order_number` (`order_number`),
+    KEY `passenger_id` (`passenger_id`),
+    KEY `seat_number` (`seat_number`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'Pre Go Ticket Order Details Table';
 -- +goose StatementEnd
 -- +goose Down
 -- +goose StatementBegin

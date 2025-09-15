@@ -38,5 +38,6 @@ var msg = map[int]string{
 	ErrorCorsCodeStatus:      "cors error",
 }
 var (
-	ErrNotFoundDataErr = errors.New("not found data") // Type of internal error
+	ErrNotFoundDataErr  = errors.New("not found data") // Type of internal error
+	ErrDuplicateDataErr = errors.New("duplicate data") // Type of internal error
 )

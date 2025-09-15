@@ -239,7 +239,7 @@ func (s *sTicketItem) DecreaseStock(ctx context.Context, ticketId int, quantity 
 
 	result, err := s.r.UpdateTicketItemStock(ctx, database.UpdateTicketItemStockParams{
 		ID:               int64(ticketId),
-		StockAvailable:   int32(newStock),
+		StockAvailable:   int32(quantity),
 		StockAvailable_2: int32(newStock + quantity),
 	})
 	if err != nil {
@@ -320,30 +320,43 @@ func (s *sTicketItem) getTicketItemFromLocalCache(ctx context.Context, ticketId 
 func (s *sTicketItem) getKeyTicketItemCache(ticketId int) string {
 	return "PRO_TICKET:ITEM:" + strconv.Itoa(ticketId)
 }
-func (s *sTicketItem) getKeyStockItemCahe(ticketId int) string {
-	return "TICKET::" + strconv.Itoa(ticketId) + "::STOCK"
+func (s *sTicketItem) getKeyStockItemCache(ticketId int) string {
+	return "TICKET:STOCK:" + strconv.Itoa(ticketId)
+}
+func (s *sTicketItem) SetStockCache(ctx context.Context, ticketId int, stock int, expiration int) (message string, err error) {
+	err = global.Rdb.Set(
+		ctx, s.getKeyStockItemCache(ticketId),
+		stock,
+		time.Duration(expiration)*time.Minute,
+	).Err()
+	if err != nil {
+		return "", fmt.Errorf("save redis failed: %w", err)
+	}
+	return "success", nil
 }
 
 func (s *sTicketItem) decreaseStockCacheByLuaScript(ctx context.Context, ticketId int, quantity int) (number int, codeStatus int) {
 	// Lua script to atomically decrease the stock
 	luaScript := `
-		local currentStock = redis.call("GET", KEYS[1])
-		if currentStock then
-			currentStock = tonumber(currentStock)
-			if currentStock >= ARGV[1] then
-				local newStock = currentStock - ARGV[1]
-				redis.call("SET", KEYS[1], newStock)
-				return newStock
-			else
-				return -1 -- Not enough stock
-			end
-		else
-			return -1 -- Key does not exist
-		end
-	`
+        local currentStock = redis.call("GET", KEYS[1])
+        if currentStock then
+            currentStock = tonumber(currentStock)
+            local qty = tonumber(ARGV[1])
+            if currentStock >= qty then
+                local newStock = currentStock - qty
+                redis.call("SET", KEYS[1], newStock)
+                return newStock
+            else
+                return -1 -- Not enough stock
+            end
+        else
+            return -1 -- Key does not exist
+        end
+    `
 
 	// Execute the Lua script
-	result, err := global.Rdb.Eval(ctx, luaScript, []string{s.getKeyStockItemCahe(ticketId)}, quantity).Result()
+	result, err := global.Rdb.Eval(ctx, luaScript, []string{s.getKeyStockItemCache(ticketId)}, quantity).Result()
+	fmt.Println("07 - DECREASE STOCK CACHE: EXECUTE LUA SCRIPT -> CHECK DATA TICKET WITH ID -> ", ticketId, err)
 	if err != nil {
 		return 0, 1
 	}

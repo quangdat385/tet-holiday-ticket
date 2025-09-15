@@ -37,7 +37,7 @@ func InitKafkaConsumer() *kafka.Reader {
 	return kafka.NewReader(kafka.ReaderConfig{
 		Brokers:        []string{url},
 		Topic:          "order-ticket",
-		GroupID:        "sale-ticket-group",
+		GroupID:        "order-group",
 		MinBytes:       10e3, // 10KB
 		MaxBytes:       10e6, // 10MB
 		CommitInterval: time.Second,

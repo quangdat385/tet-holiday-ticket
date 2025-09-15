@@ -80,6 +80,7 @@ type PreGoOrder05202599999 struct {
 	CreatedAt time.Time
 }
 
+// Pre Go Ticket Order Details Table
 type PreGoTicketOrderDetail05202599999 struct {
 	// Primary key
 	ID int32

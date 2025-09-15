@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS pre_go_communication_conversation_users_99999 (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    FOREIGN KEY (conversation_id) REFERENCES pre_go_communication_conversation_99999(id) ON DELETE CASCADE,
+    FOREIGN KEY (conversation_id) REFERENCES pre_go_communication_conversation_99999(id),
     INDEX idx_is_deleted (is_deleted)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'Pre-go communication conversation users table';
 -- +goose StatementEnd

@@ -32,13 +32,17 @@ message PreGoTicketItem99999 {
     int64 id = 1;
     string name = 2;
     string description = 3;
-    int32 stock_initial = 4;
-    int32 stock_available = 5;
-    bool is_stock_prepared = 6;
-    double price_original = 7;
-    double price_flash = 8;
-    google.protobuf.Timestamp sale_start_time = 9;
-    google.protobuf.Timestamp sale_end_time = 10;
-    int32 status = 11;
-    int32 activity_id = 12;
+    string seat_class = 4;
+    int64 ticket_id = 5;
+    int64 train_id = 6;
+    oogle.protobuf.Timestamp departure_time = 7;
+    int32 stock_initial = 8;
+    int32 stock_available = 9;
+    bool is_stock_prepared = 10;
+    double price_original = 11;
+    double price_flash = 12;
+    google.protobuf.Timestamp sale_start_time = 13;
+    google.protobuf.Timestamp sale_end_time = 14;
+    int32 status = 15;
+    int32 activity_id = 16;
 }

@@ -19,8 +19,13 @@ type OrderItem struct {
 	ItemCount int32   `json:"item_count"`
 }
 type OrderEvent struct {
-	Type  string          `json:"type"`
-	Order OrderEventInput `json:"order"`
+	Type    string          `json:"type"`
+	Order   OrderEventInput `json:"order"`
+	Payment PaymentInput    `json:"payment"`
+}
+type PaymentInput struct {
+	OrderNumber string `json:"order_number" binding:"required"`
+	UserID      int64  `json:"user_id" binding:"required"`
 }
 
 const (
@@ -29,7 +34,8 @@ const (
 	OrderEventTypeReConfirmOrder string = "re-confirm-order"
 	OrderEventTypeOrderSuccess   string = "order-success"
 	OrderEventTypeReOrder        string = "re-order"
-	OrderEventCreatePayment      string = "payment-order"
+	OrderEventTypeOrderDetail    string = "create-order-detail"
+	OrderEventCreatePayment      string = "create-payment"
 	OrderEventTypeCancelOrder    string = "cancel-order"
 	OrderEventTypeRefundOrder    string = "refund-order"
 )

@@ -3,7 +3,6 @@ package impl
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"time"
 
@@ -45,7 +44,7 @@ func (k *KafkaConsumerServiceImpl) Consume() {
 			if code == 1 {
 				orderEvent.Type = model.OrderEventTypeReConfirmOrder
 				orderEventJSON, _ := json.Marshal(orderEvent)
-				key := fmt.Sprintf("%s-%s", orderEvent.Order.OrderNumber, orderEvent.Type)
+				key := orderEvent.Type
 				msg := kafka.Message{
 					Key:   []byte(key),
 					Value: orderEventJSON,
@@ -63,20 +62,20 @@ func (k *KafkaConsumerServiceImpl) Consume() {
 					Status:      false,
 				}
 				var message model.Message
-				msgBytes, _ := json.Marshal(msg)
 				message.Type = "Notification"
 				message.NotificationData = model.NotificationData{
 					From:    1,
 					To:      int(orderEvent.Order.UserID),
-					Content: string(msgBytes),
+					Content: msg,
 				}
-				go global.Rdb.Publish(context.Background(), "notification", message)
+				msgBytes, _ := json.Marshal(message)
+				go global.Rdb.Publish(context.Background(), "notification", msgBytes)
 				k.consumer.CommitMessages(context.Background(), m)
 				continue
 			}
 			orderEvent.Type = model.OrderEventTypeOrderSuccess
 			orderEventJSON, _ := json.Marshal(orderEvent)
-			key := fmt.Sprintf("%s-%s", orderEvent.Order.OrderNumber, orderEvent.Type)
+			key := orderEvent.Type
 			msg := kafka.Message{
 				Key:   []byte(key),
 				Value: orderEventJSON,
@@ -89,7 +88,7 @@ func (k *KafkaConsumerServiceImpl) Consume() {
 		case model.OrderEventTypeReConfirmOrder:
 			orderEvent.Type = model.OrderEventTypeConfirmOrder
 			orderEventJSON, _ := json.Marshal(orderEvent)
-			key := fmt.Sprintf("%s-%s", orderEvent.Order.OrderNumber, orderEvent.Type)
+			key := orderEvent.Type
 			msg := kafka.Message{
 				Key:   []byte(key),
 				Value: orderEventJSON,

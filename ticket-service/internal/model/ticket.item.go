@@ -61,6 +61,12 @@ type TicketItemsOutput struct {
 	Version         int       `json:"version,omitempty"` // Sửa tag
 }
 
+type SetStockCacheRequest struct {
+	TicketId int `json:"ticket_id"`
+	Stock    int `json:"stock"`
+	Duration int `json:"duration"`
+}
+
 func (t TicketItemsOutput) IsEmpty() bool {
 	return t.TicketId == 0 && t.TicketName == "" && t.StockAvailable == 0 && t.StockInitial == 0
 }

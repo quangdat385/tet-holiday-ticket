@@ -74,6 +74,6 @@ func InitRouter() *gin.Engine {
 			managerRouter.TrainRouter.InitTrainRouter(MainGroup)
 			managerRouter.SeatRouter.InitSeatRouter(MainGroup)
 		}
-		return r
 	}
+	return r
 }

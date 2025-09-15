@@ -20,5 +20,7 @@ func (r *TicketItemRouter) InitTicketItemRouter(Router *gin.RouterGroup) {
 		TicketItemRouterPrivateGroup.POST("create", middleware.RoleMiddleware("Admin"), controller.TicketItemController.CreateTicketItem)
 		TicketItemRouterPrivateGroup.PUT("update/:ticket_item_id", middleware.RoleMiddleware("Admin"), controller.TicketItemController.UpdateTicketItem)
 		TicketItemRouterPrivateGroup.DELETE("delete/:ticket_item_id", middleware.RoleMiddleware("Admin"), controller.TicketItemController.DeleteTicketItem)
+		TicketItemRouterPrivateGroup.PUT("set-stock-cache", middleware.RoleMiddleware("Admin"), controller.TicketItemController.SetStockCache)
+		TicketItemRouterPrivateGroup.PUT("decrease-stock-cache", middleware.RoleMiddleware("Admin"), controller.TicketItemController.DecreaseStockCache)
 	}
 }

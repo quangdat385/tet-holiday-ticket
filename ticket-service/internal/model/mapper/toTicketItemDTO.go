@@ -17,9 +17,14 @@ func parsePriceOriginal(priceStr string) float32 {
 }
 
 func ToTicketItemDTO(ticketItem database.GetTicketItemByIdRow) model.TicketItemsOutput {
+	seatClass := string(ticketItem.SeatClass)
 	return model.TicketItemsOutput{
+		TicketItemId:    int(ticketItem.ID),
 		TicketId:        int(ticketItem.ID),
 		TicketName:      ticketItem.Name,
+		TrainID:         int(ticketItem.TrainID),
+		Description:     ticketItem.Description.String,
+		SeatClass:       seatClass,
 		StockInitial:    int(ticketItem.StockInitial),
 		StockAvailable:  int(ticketItem.StockAvailable),
 		IsStockPrepared: ticketItem.IsStockPrepared,

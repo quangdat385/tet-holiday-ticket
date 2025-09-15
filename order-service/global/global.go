@@ -16,6 +16,6 @@ var (
 	Rdb            *redis.Client
 	KafkaProducer  *kafka.Writer
 	AllowedOrigins = map[string]bool{
-		"http://localhost:8082": true,
+		"http://localhost:8081": true,
 	}
 )

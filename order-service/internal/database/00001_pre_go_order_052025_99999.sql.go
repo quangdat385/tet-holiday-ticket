@@ -12,6 +12,43 @@ import (
 	"time"
 )
 
+const checkIdempotencyOrder = `-- name: CheckIdempotencyOrder :many
+SELECT id
+FROM pre_go_order_052025_99999
+WHERE user_id = ?
+    AND order_date >= ?
+    AND order_date <= ?
+`
+
+type CheckIdempotencyOrderParams struct {
+	UserID      int64
+	OrderDate   time.Time
+	OrderDate_2 time.Time
+}
+
+func (q *Queries) CheckIdempotencyOrder(ctx context.Context, arg CheckIdempotencyOrderParams) ([]int32, error) {
+	rows, err := q.db.QueryContext(ctx, checkIdempotencyOrder, arg.UserID, arg.OrderDate, arg.OrderDate_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var id int32
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deleteOrder = `-- name: DeleteOrder :execresult
 DELETE FROM pre_go_order_052025_99999
 WHERE id = ?
@@ -119,6 +156,78 @@ func (q *Queries) GetOrderByOrderNumber(ctx context.Context, orderNumber string)
 	return i, err
 }
 
+const getOrdersByUserId = `-- name: GetOrdersByUserId :many
+SELECT id,
+    order_number,
+    order_amount,
+    terminal_id,
+    station_code,
+    user_id,
+    order_date,
+    order_notes,
+    order_item,
+    created_at,
+    updated_at
+FROM pre_go_order_052025_99999
+WHERE user_id = ?
+LIMIT ? OFFSET ?
+`
+
+type GetOrdersByUserIdParams struct {
+	UserID int64
+	Limit  int32
+	Offset int32
+}
+
+type GetOrdersByUserIdRow struct {
+	ID          int32
+	OrderNumber string
+	OrderAmount string
+	TerminalID  int64
+	StationCode string
+	UserID      int64
+	OrderDate   time.Time
+	OrderNotes  string
+	OrderItem   json.RawMessage
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func (q *Queries) GetOrdersByUserId(ctx context.Context, arg GetOrdersByUserIdParams) ([]GetOrdersByUserIdRow, error) {
+	rows, err := q.db.QueryContext(ctx, getOrdersByUserId, arg.UserID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetOrdersByUserIdRow
+	for rows.Next() {
+		var i GetOrdersByUserIdRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrderNumber,
+			&i.OrderAmount,
+			&i.TerminalID,
+			&i.StationCode,
+			&i.UserID,
+			&i.OrderDate,
+			&i.OrderNotes,
+			&i.OrderItem,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const insertOrder = `-- name: InsertOrder :execresult
 INSERT INTO pre_go_order_052025_99999 (
         order_number,
@@ -163,9 +272,9 @@ const updateOrder = `-- name: UpdateOrder :execresult
 UPDATE pre_go_order_052025_99999
 SET order_amount = ?,
     terminal_id = ?,
+    station_code = ?,
     order_date = ?,
     order_notes = ?,
-    order_item = ?,
     updated_at = NOW()
 WHERE id = ?
 `
@@ -173,9 +282,9 @@ WHERE id = ?
 type UpdateOrderParams struct {
 	OrderAmount string
 	TerminalID  int64
+	StationCode string
 	OrderDate   time.Time
 	OrderNotes  string
-	OrderItem   json.RawMessage
 	ID          int32
 }
 
@@ -183,9 +292,9 @@ func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) (sql.R
 	return q.db.ExecContext(ctx, updateOrder,
 		arg.OrderAmount,
 		arg.TerminalID,
+		arg.StationCode,
 		arg.OrderDate,
 		arg.OrderNotes,
-		arg.OrderItem,
 		arg.ID,
 	)
 }

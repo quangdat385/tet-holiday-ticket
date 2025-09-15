@@ -3,7 +3,7 @@ package vo
 import "time"
 
 type OrderDetailIDRequest struct {
-	OrderDetailID int64 `json:"order_detail_id"`
+	ID int64 `uri:"id" binding:"required"`
 }
 type CreateOrderDetailRequest struct {
 	TicketItemID     int64     `json:"ticket_item_id" binding:"required"`

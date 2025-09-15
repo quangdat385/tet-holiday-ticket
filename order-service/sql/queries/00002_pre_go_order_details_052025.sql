@@ -47,3 +47,35 @@ SELECT id,
     updated_at
 FROM pre_go_ticket_order_detail_052025_99999
 WHERE id = ?;
+-- name: GetOrderDetailsByOrderNumber :many
+SELECT id,
+    ticket_item_id,
+    order_number,
+    passenger_name,
+    departure_station,
+    arrival_station,
+    departure_time,
+    passenger_id,
+    seat_class,
+    ticket_price,
+    seat_number,
+    created_at,
+    updated_at
+FROM pre_go_ticket_order_detail_052025_99999
+WHERE order_number = ?;
+-- name: GetOrderDetailsByPassengerId :many
+SELECT id,
+    ticket_item_id,
+    order_number,
+    passenger_name,
+    departure_station,
+    arrival_station,
+    departure_time,
+    passenger_id,
+    seat_class,
+    ticket_price,
+    seat_number,
+    created_at,
+    updated_at
+FROM pre_go_ticket_order_detail_052025_99999
+WHERE passenger_id = ?;

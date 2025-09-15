@@ -5,48 +5,64 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"time"
+	"strconv"
 
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/quangdat385/holiday-ticket/ticket-service/global"
+	"github.com/quangdat385/holiday-ticket/ticket-service/internal/database"
 	pb "github.com/quangdat385/holiday-ticket/ticket-service/pkg/api/proto"
 )
 
 type server struct {
 	pb.UnimplementedTicketServiceServer
+	r *database.Queries
 }
 
 func (s *server) GetTicket(ctx context.Context, req *pb.GetTicketRequest) (*pb.PreGoTicket99999, error) {
 	fmt.Println("GetTicket called with request:", req)
+	ticketDB, err := s.r.GetTicketById(ctx, req.Id)
+	if err != nil {
+		return nil, err
+	}
 	// Simulate a ticket retrieval
 	ticket := &pb.PreGoTicket99999{
-		Id:          req.Id,
-		Name:        "Sample Ticket",
-		StartTime:   timestamppb.New(time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC)),
-		EndTime:     timestamppb.New(time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC)),
-		Description: "Sample Description",
+		Id:          ticketDB.ID,
+		Name:        ticketDB.Name,
+		StartTime:   timestamppb.New(ticketDB.StartTime),
+		EndTime:     timestamppb.New(ticketDB.EndTime),
+		Description: ticketDB.Description.String,
 	}
 	return ticket, nil
 }
 func (s *server) GetTicketItem(ctx context.Context, req *pb.GetTicketItemRequest) (*pb.PreGoTicketItem99999, error) {
 	fmt.Println("GetTicketItem called with request:", req)
+	ticketItemDB, err := s.r.GetTicketItemById(ctx, req.Id)
+	if err != nil {
+		return nil, err
+	}
 	// Simulate a ticket item retrieval
 	ticketItem := &pb.PreGoTicketItem99999{
-		Id:              req.Id,
-		Name:            "Sample Ticket Item",
-		Description:     "Sample Description",
-		StockInitial:    100,
-		StockAvailable:  50,
-		IsStockPrepared: true,
-		PriceOriginal:   100.0,
-		PriceFlash:      50.0,
-		SaleStartTime:   timestamppb.New(time.Date(2023, 10, 1, 0, 0, 0, 0, time.UTC)),
-		SaleEndTime:     timestamppb.New(time.Date(2023, 10, 2, 0, 0, 0, 0, time.UTC)),
-		Status:          1,
-		ActivityId:      12,
+		Id:             ticketItemDB.ID,
+		Name:           ticketItemDB.Name,
+		Description:    ticketItemDB.Description.String,
+		StockInitial:   ticketItemDB.StockInitial,
+		StockAvailable: ticketItemDB.StockAvailable,
+		PriceOriginal:  parseStringToFloat64(ticketItemDB.PriceOriginal),
+		SaleStartTime:  timestamppb.New(ticketItemDB.SaleStartTime),
+		SaleEndTime:    timestamppb.New(ticketItemDB.SaleEndTime),
+		Status:         ticketItemDB.Status,
+		ActivityId:     int32(ticketItemDB.ActivityID),
 	}
 	return ticketItem, nil
+}
+func parseStringToFloat64(s string) float64 {
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0
+	}
+	return f
 }
 
 func InitServer(address string) error {
@@ -57,7 +73,10 @@ func InitServer(address string) error {
 	}
 	fmt.Println("Listening on", address)
 	s := grpc.NewServer()
-	pb.RegisterTicketServiceServer(s, &server{})
+	r := database.New(global.Mdb)
+	pb.RegisterTicketServiceServer(s, &server{
+		r: r,
+	})
 
 	log.Printf("Server is running on %s", address)
 	if err := s.Serve(lis); err != nil {

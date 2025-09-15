@@ -5,8 +5,11 @@ import "time"
 type TicketItemRequest struct {
 	TicketId int `uri:"ticket_id" binding:"required"`
 }
+type TicketItemQueryRequest struct {
+	Version int `form:"version" binding:"required"`
+}
 
-type TickertItemCreateRequest struct {
+type TicketItemCreateRequest struct {
 	TicketId        int       `json:"ticket_id" binding:"required"`
 	TicketName      string    `json:"ticket_name" binding:"required"`
 	TrainID         int       `json:"train_id" binding:"required"`
@@ -40,4 +43,14 @@ type UpdateTicketItemRequest struct {
 	SaleEndTime     time.Time `json:"sale_end_time,omitempty" binding:"-"`
 	Status          int       `json:"status,omitempty" binding:"-"`
 	ActivityId      int64     `json:"activity_id,omitempty" binding:"-"`
+}
+
+type SetStockCacheRequest struct {
+	TicketItemId int `json:"ticket_item_id" binding:"required"`
+	Stock        int `json:"stock" binding:"required"`
+	Expiration   int `json:"expiration" binding:"required"`
+}
+type DecreaseStockRequest struct {
+	TicketItemID int `json:"ticket_item_id" binding:"required"`
+	Stock        int `json:"stock" binding:"required"`
 }

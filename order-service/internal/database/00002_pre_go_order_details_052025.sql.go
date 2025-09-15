@@ -75,6 +75,148 @@ func (q *Queries) GetOrderDetailById(ctx context.Context, id int32) (GetOrderDet
 	return i, err
 }
 
+const getOrderDetailsByOrderNumber = `-- name: GetOrderDetailsByOrderNumber :many
+SELECT id,
+    ticket_item_id,
+    order_number,
+    passenger_name,
+    departure_station,
+    arrival_station,
+    departure_time,
+    passenger_id,
+    seat_class,
+    ticket_price,
+    seat_number,
+    created_at,
+    updated_at
+FROM pre_go_ticket_order_detail_052025_99999
+WHERE order_number = ?
+`
+
+type GetOrderDetailsByOrderNumberRow struct {
+	ID               int32
+	TicketItemID     int64
+	OrderNumber      string
+	PassengerName    string
+	DepartureStation string
+	ArrivalStation   string
+	DepartureTime    time.Time
+	PassengerID      int64
+	SeatClass        PreGoTicketOrderDetail05202599999SeatClass
+	TicketPrice      string
+	SeatNumber       string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+}
+
+func (q *Queries) GetOrderDetailsByOrderNumber(ctx context.Context, orderNumber string) ([]GetOrderDetailsByOrderNumberRow, error) {
+	rows, err := q.db.QueryContext(ctx, getOrderDetailsByOrderNumber, orderNumber)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetOrderDetailsByOrderNumberRow
+	for rows.Next() {
+		var i GetOrderDetailsByOrderNumberRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TicketItemID,
+			&i.OrderNumber,
+			&i.PassengerName,
+			&i.DepartureStation,
+			&i.ArrivalStation,
+			&i.DepartureTime,
+			&i.PassengerID,
+			&i.SeatClass,
+			&i.TicketPrice,
+			&i.SeatNumber,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getOrderDetailsByPassengerId = `-- name: GetOrderDetailsByPassengerId :many
+SELECT id,
+    ticket_item_id,
+    order_number,
+    passenger_name,
+    departure_station,
+    arrival_station,
+    departure_time,
+    passenger_id,
+    seat_class,
+    ticket_price,
+    seat_number,
+    created_at,
+    updated_at
+FROM pre_go_ticket_order_detail_052025_99999
+WHERE passenger_id = ?
+`
+
+type GetOrderDetailsByPassengerIdRow struct {
+	ID               int32
+	TicketItemID     int64
+	OrderNumber      string
+	PassengerName    string
+	DepartureStation string
+	ArrivalStation   string
+	DepartureTime    time.Time
+	PassengerID      int64
+	SeatClass        PreGoTicketOrderDetail05202599999SeatClass
+	TicketPrice      string
+	SeatNumber       string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+}
+
+func (q *Queries) GetOrderDetailsByPassengerId(ctx context.Context, passengerID int64) ([]GetOrderDetailsByPassengerIdRow, error) {
+	rows, err := q.db.QueryContext(ctx, getOrderDetailsByPassengerId, passengerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetOrderDetailsByPassengerIdRow
+	for rows.Next() {
+		var i GetOrderDetailsByPassengerIdRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TicketItemID,
+			&i.OrderNumber,
+			&i.PassengerName,
+			&i.DepartureStation,
+			&i.ArrivalStation,
+			&i.DepartureTime,
+			&i.PassengerID,
+			&i.SeatClass,
+			&i.TicketPrice,
+			&i.SeatNumber,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const insertOrderDetail = `-- name: InsertOrderDetail :execresult
 INSERT INTO pre_go_ticket_order_detail_052025_99999 (
         ticket_item_id,

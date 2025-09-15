@@ -4,7 +4,7 @@ import "time"
 
 type NotificationInput struct {
 	From    int64 `json:"from"`
-	To      any   `json:"to"`
+	To      int64 `json:"to,omitempty"`
 	Content any   `json:"content"`
 }
 type UpdateNotificationInput struct {
@@ -14,7 +14,7 @@ type UpdateNotificationInput struct {
 type NotificationOutput struct {
 	ID        int64     `json:"id"`
 	From      int64     `json:"from"`
-	To        any       `json:"to"`
+	To        int64     `json:"to,omitempty"`
 	Content   any       `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

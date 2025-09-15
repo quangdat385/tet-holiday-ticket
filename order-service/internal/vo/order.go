@@ -6,8 +6,18 @@ import (
 	"github.com/quangdat385/holiday-ticket/order-service/internal/model"
 )
 
-type OrderIdRequest struct {
-	OrderId int32 `json:"order_id" binding:"required"`
+type OrderIDRequest struct {
+	OrderID int32 `uri:"order_id" binding:"required"`
+}
+type OrderNumberRequest struct {
+	OrderNumber string `uri:"order_number" binding:"required"`
+}
+type UserIDRequest struct {
+	UserID int64 `uri:"user_id" binding:"required"`
+}
+type QueriesOrderRequest struct {
+	Page  int32 `form:"page" binding:"-" optional:"default=1"`
+	Limit int32 `form:"page_size" binding:"-" optional:"default=50"`
 }
 
 type CreateOrderRequest struct {

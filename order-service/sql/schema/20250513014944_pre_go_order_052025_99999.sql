@@ -17,7 +17,9 @@ CREATE TABLE IF NOT EXISTS `pre_go_order_052025_99999` (
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
     PRIMARY KEY (`id`) USING BTREE,
     UNIQUE KEY `order_number` (`order_number`),
-    KEY `order_date` (`order_date`)
+    KEY `order_date` (`order_date`),
+    KEY `user_id` (`user_id`),
+    KEY `order_notes` (`order_notes`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'Table for ticket orders';
 -- +goose StatementEnd
 -- +goose Down

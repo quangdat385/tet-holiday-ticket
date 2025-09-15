@@ -23,14 +23,14 @@ type cOrderDetailController struct{}
 // @Failure 400 {object} response.ErrorResponseData
 // @Failure 404 {object} response.ErrorResponseData
 // @Failure 500 {object} response.ErrorResponseData
-// @Router /order/detail/{id} [get]
+// @Router /order/detail/get-by-id/{id} [get]
 func (c *cOrderDetailController) GetOrderDetailByID(ctx *gin.Context) {
 	var params vo.OrderDetailIDRequest
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		response.ErrorResponse(ctx, response.ParamInvalidCodeStatus, err.Error())
 		return
 	}
-	orderDetail, err := service.OrderDetailService().GetOrderDetailByID(ctx, int32(params.OrderDetailID))
+	orderDetail, err := service.OrderDetailService().GetOrderDetailByID(ctx, int32(params.ID))
 	if err != nil {
 		response.ErrorResponse(ctx, response.NotFoundErrorCodeStatus, err.Error())
 		return
@@ -71,18 +71,25 @@ func (c *cOrderDetailController) CreateOrderDetail(ctx *gin.Context) {
 // @Produce  json
 // @Param        x-client-id header string true "Client ID"
 // @Param        x-device-id header string true "Device ID"
+// @Param id path string true "Order Detail ID"
 // @Param payload body vo.UpdateOrderDetailRequest true "Update order detail request"
 // @Success 200 {object} response.ResponseData{data=model.OrderDetailOutput}
 // @Failure 400 {object} response.ErrorResponseData
 // @Failure 404 {object} response.ErrorResponseData
 // @Failure 500 {object} response.ErrorResponseData
-// @Router /order/detail/update [put]
+// @Router /order/detail/update/{id} [put]
 func (c *cOrderDetailController) UpdateOrderDetail(ctx *gin.Context) {
 	var params vo.UpdateOrderDetailRequest
+	var uriParams vo.OrderDetailIDRequest
 	if err := ctx.ShouldBindJSON(&params); err != nil {
 		response.ErrorResponse(ctx, response.ParamInvalidCodeStatus, err.Error())
 		return
 	}
+	if err := ctx.ShouldBindUri(&uriParams); err != nil {
+		response.ErrorResponse(ctx, response.ParamInvalidCodeStatus, err.Error())
+		return
+	}
+
 	orderDetail, err := service.OrderDetailService().UpdateOrderDetail(ctx, params)
 	if err != nil {
 		response.ErrorResponse(ctx, response.UpdateErrorCodeStatus, err.Error())
@@ -110,7 +117,7 @@ func (c *cOrderDetailController) DeleteOrderDetail(ctx *gin.Context) {
 		response.ErrorResponse(ctx, response.ParamInvalidCodeStatus, err.Error())
 		return
 	}
-	err := service.OrderDetailService().DeleteOrderDetail(ctx, int32(params.OrderDetailID))
+	err := service.OrderDetailService().DeleteOrderDetail(ctx, int32(params.ID))
 	if err != nil {
 		response.ErrorResponse(ctx, response.DeleteErrorCodeStatus, err.Error())
 		return

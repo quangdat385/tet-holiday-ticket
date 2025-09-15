@@ -2,6 +2,8 @@ package impl
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -22,6 +24,25 @@ type sSocket struct {
 }
 
 func NewSocketImpl(rdb *redis.Client) *sSocket {
+	pubsub := rdb.Subscribe(context.Background(), "notification")
+	fmt.Println("Subscribed to Redis channel: notification")
+	go func() {
+		fmt.Println("Listening for messages from Redis...")
+		for msg := range pubsub.Channel() {
+			log.Printf("Received message from Redis: %s", msg.Payload)
+
+			var payload socket.Message
+			err := json.Unmarshal([]byte(msg.Payload), &payload)
+			if err != nil {
+				log.Printf("Error unmarshalling message: %v", err)
+				continue
+			}
+			if payload.Type == "Message" {
+				global.Hub.Message <- []byte(msg.Payload)
+			}
+			global.Hub.Notification <- []byte(msg.Payload)
+		}
+	}()
 	return &sSocket{
 		rdb: rdb,
 		upgrader: websocket.Upgrader{

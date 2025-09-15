@@ -44,16 +44,12 @@ func (k *KafkaConsumerServiceImpl) Consume() {
 		switch orderEvent.Type {
 		case model.OrderEventTypeCreateOrder:
 			var checkOrder bool
-			var order model.OrderOutPut
-			for range 3 {
-				orderDB, err := k.CreateOrder(orderEvent)
+			for i := 0; i < 3; i++ {
+				log.Printf("Retrying create order (attempt %d)\n", i+1)
+				_, err := k.CreateOrder(orderEvent)
 				if err != nil {
 					continue
 				}
-				if orderDB.ID != 0 {
-					continue
-				}
-				order = orderDB
 				checkOrder = true
 				break
 			}
@@ -61,14 +57,14 @@ func (k *KafkaConsumerServiceImpl) Consume() {
 				orderEvent.Order.OrderNotes = "Order-->Failed"
 				log.Printf("Failed to create order after retries: %+v\n", orderEvent.Order)
 				var message model.Message
-				msgBytes, _ := json.Marshal(orderEvent.Order)
 				message.Type = "Notification"
 				message.NotificationData = model.NotificationData{
 					From:    1,
 					To:      1,
-					Content: string(msgBytes),
+					Content: orderEvent.Order,
 				}
-				global.Rdb.Publish(context.Background(), "notification", message)
+				msgBytes, _ := json.Marshal(message)
+				global.Rdb.Publish(context.Background(), "notification", msgBytes)
 				k.consumer.CommitMessages(context.Background(), m)
 				log.Printf("Message: %s\n", string(m.Value))
 				continue
@@ -76,7 +72,7 @@ func (k *KafkaConsumerServiceImpl) Consume() {
 			log.Printf("Order created successfully after retries: %+v\n", orderEvent.Order)
 			orderEvent.Type = model.OrderEventTypeConfirmOrder
 			orderEventJSON, _ := json.Marshal(orderEvent)
-			key := fmt.Sprintf("%s-%s", order.OrderNumber, model.OrderEventTypeConfirmOrder)
+			key := model.OrderEventTypeConfirmOrder
 			msg := kafka.Message{
 				Key:   []byte(key),
 				Value: orderEventJSON,
@@ -104,14 +100,14 @@ func (k *KafkaConsumerServiceImpl) Consume() {
 				orderEvent.Order.OrderNotes = "Order-->Update-->Failed"
 				log.Printf("Failed to update order after retries: %+v\n", orderEvent.Order)
 				var message model.Message
-				msgBytes, _ := json.Marshal(orderEvent.Order)
 				message.Type = "Notification"
 				message.NotificationData = model.NotificationData{
 					From:    1,
 					To:      1,
-					Content: string(msgBytes),
+					Content: orderEvent.Order,
 				}
-				global.Rdb.Publish(context.Background(), "notification", message)
+				msgBytes, _ := json.Marshal(message)
+				global.Rdb.Publish(context.Background(), "notification", msgBytes)
 				k.consumer.CommitMessages(context.Background(), m)
 				log.Printf("Message: %s\n", string(m.Value))
 				continue
@@ -122,14 +118,14 @@ func (k *KafkaConsumerServiceImpl) Consume() {
 				Status:      true,
 			}
 			var message model.Message
-			msgBytes, _ := json.Marshal(content)
 			message.Type = "Notification"
 			message.NotificationData = model.NotificationData{
 				From:    1,
 				To:      orderEvent.Order.UserID,
-				Content: string(msgBytes),
+				Content: content,
 			}
-			global.Rdb.Publish(context.Background(), "notification", message)
+			msgBytes, _ := json.Marshal(message)
+			global.Rdb.Publish(context.Background(), "notification", msgBytes)
 			log.Printf("Received order success event: %+v\n", orderEvent.Order)
 			k.consumer.CommitMessages(context.Background(), m)
 			log.Printf("Message: %s\n", string(m.Value))
@@ -152,6 +148,7 @@ func (k *KafkaConsumerServiceImpl) CreateOrder(in model.OrderEvent) (out model.O
 	if err != nil {
 		return out, err
 	}
+	fmt.Println(string(orderItemJSON))
 	result, err := k.r.InsertOrder(context.Background(), database.InsertOrderParams{
 		OrderNumber: in.Order.OrderNumber,
 		UserID:      in.Order.UserID,
@@ -163,6 +160,7 @@ func (k *KafkaConsumerServiceImpl) CreateOrder(in model.OrderEvent) (out model.O
 		OrderItem:   orderItemJSON,
 	})
 	if err != nil {
+		fmt.Println("Error inserting order:", err)
 		return out, err
 	}
 	lastOrderId, err := result.LastInsertId()

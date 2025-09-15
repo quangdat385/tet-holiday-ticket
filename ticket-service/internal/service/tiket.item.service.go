@@ -13,6 +13,7 @@ type (
 		UpdateTicketItem(ctx context.Context, input model.UpdateTicketItemInPut) (out model.TicketItemsOutput, err error)
 		DeleteTicketItem(ctx context.Context, ticketItemId int) (err error)
 		DecreaseStock(ctx context.Context, ticketId int, quantity int) (out int, code int)
+		SetStockCache(ctx context.Context, ticketId int, stock int, expiration int) (message string, err error)
 	}
 )
 

@@ -19,6 +19,6 @@ type GetTicketSegmentPriceFromRouteSegmentIDToToSegmentIDRequest struct {
 	ToSegmentID   int `json:"to_segment_id" binding:"required"`
 }
 type GetListTicketSegmentPriceRequest struct {
-	Page  int `json:"page" binding:"required"`
-	Limit int `json:"limit" binding:"required"`
+	Page  int `form:"page" binding:"required"`
+	Limit int `form:"limit" binding:"required"`
 }

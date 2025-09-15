@@ -9,12 +9,12 @@ type TicketItemRouter struct {
 }
 
 func (p *TicketItemRouter) InitTicketItemRouter(Router *gin.RouterGroup) {
-	TicketItemRouterPublicGroup := Router.Group("ticket")
+	TicketItemRouterPublicGroup := Router.Group("ticket-item")
 	TicketItemRouterPublicGroup.Use()
 	{
-		TicketItemRouterPublicGroup.GET("ticket-item/:ticket_id", controller.TicketItemController.GetTicketItem)
+		TicketItemRouterPublicGroup.GET("get-by-id/:ticket_id", controller.TicketItemController.GetTicketItem)
 	}
-	TicketItemRouterPrivateGroup := Router.Group("ticket")
+	TicketItemRouterPrivateGroup := Router.Group("ticket-item")
 	TicketItemRouterPrivateGroup.Use()
 	{
 

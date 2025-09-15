@@ -141,6 +141,7 @@ func handleMessage(message []byte) (out []model.UserIDS, err error) {
 func handleNotification(message []byte) (out any, err error) {
 	fmt.Println("Handle notification received")
 	var payload Message
+	fmt.Println("Message: ", string(message))
 	err = json.Unmarshal(message, &payload)
 	if err != nil {
 		log.Println("error: ", err)

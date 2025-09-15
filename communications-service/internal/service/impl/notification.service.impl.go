@@ -69,10 +69,10 @@ func (s *sNotification) GetNotificationsFromUserIDToIsNull(context context.Conte
 func (s *sNotification) CreateNotification(context context.Context, input model.NotificationInput) (out model.NotificationOutput, err error) {
 	notification, err := s.r.InsertNotification(context, database.InsertNotificationParams{
 		From: input.From,
-		To: func() sql.NullInt64 {
-			toInt, ok := input.To.(int64)
-			return sql.NullInt64{Int64: toInt, Valid: ok}
-		}(),
+		To: sql.NullInt64{
+			Int64: input.To,
+			Valid: input.To != 0,
+		},
 		Content: func() json.RawMessage {
 			b, _ := json.Marshal(input.Content)
 			return json.RawMessage(b)

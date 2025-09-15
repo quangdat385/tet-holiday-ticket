@@ -52,11 +52,11 @@ type ContentType struct {
 }
 
 const (
-	OrderEventTypeCreateOrder  string = "create-order"
-	OrderEventTypeConfirmOrder string = "confirm-order"
-	OrderEventTypeOrderSuccess string = "order-success"
-	OrderEventTypeReOrder      string = "re-order"
-	OrderEventCreatePayment    string = "payment-order"
-	OrderEventTypeCancelOrder  string = "cancel-order"
-	OrderEventTypeRefundOrder  string = "refund-order"
+	OrderEventTypeCreateOrder   string = "create-order"
+	OrderEventTypeReCreateOrder string = "re-create-order"
+	OrderEventTypeConfirmOrder  string = "confirm-order"
+	OrderEventTypeOrderSuccess  string = "order-success"
+	OrderEventCreatePayment     string = "payment-order"
+	OrderEventTypeCancelOrder   string = "cancel-order"
+	OrderEventTypeRefundOrder   string = "refund-order"
 )

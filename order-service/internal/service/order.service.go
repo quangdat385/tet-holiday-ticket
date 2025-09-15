@@ -14,6 +14,8 @@ type (
 		UpdateOrder(ctx context.Context, in vo.UpdateOrderRequest) (out model.OrderOutPut, err error)
 		UpdateOrderNotes(ctx context.Context, orderNumber string, orderNotes string) (err error)
 		DeleteOrder(ctx context.Context, orderID int64) (err error)
+		GetOrderByOrderNumber(ctx context.Context, orderNumber string) (out model.OrderOutPut, err error)
+		GetOrdersByUserId(ctx context.Context, userID int64, page int32, pageSize int32) (out []model.OrderOutPut, err error)
 	}
 )
 

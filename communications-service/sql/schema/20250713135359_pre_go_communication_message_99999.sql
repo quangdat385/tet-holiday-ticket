@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS pre_go_communication_message_99999;
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS pre_go_communication_message_99999 (
     id BIGINT NOT NULL AUTO_INCREMENT COMMENT 'Primary key for the message table',
-    conversation_id BIGINT NOT NULL UNIQUE,
+    conversation_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
     status BOOLEAN DEFAULT FALSE,
     message TEXT NOT NULL,
