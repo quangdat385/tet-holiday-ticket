@@ -5,4 +5,5 @@ type UserRouterGroup struct {
 	NotificationRouter
 	ConversationRouter
 	UserInformationRouter
+	MediaRouter
 }

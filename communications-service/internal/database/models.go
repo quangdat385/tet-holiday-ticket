@@ -87,3 +87,19 @@ type PreGoCommunicationNotificationUser99999 struct {
 	NotificationID int64
 	ReadAt         sql.NullTime
 }
+
+// ticket pre-go communication media table
+type PreGoCommunicationMedia99999 struct {
+	// Primary key for the media table
+	ID             int64
+	MessageID      sql.NullInt64
+	ConversationID sql.NullInt64
+	UserID         int64
+	FileName       string
+	OriginalName   string
+	MimeType       string
+	Size           int64
+	URL            string
+	CreatedAt      sql.NullTime
+	UpdatedAt      sql.NullTime
+}

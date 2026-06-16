@@ -29,12 +29,14 @@ func InitRouter() *gin.Engine {
 	MainGroup := r.Group("/ticket-communication/api/v1")
 	{
 		MainGroup.GET("/checkStatus")
+		MainGroup.Static("/media/files", "./storages/media")
 	}
 	{
 		userRouter.MessageRouter.InitMessageRoter(MainGroup)
 		userRouter.ConversationRouter.InitConversationRouter(MainGroup)
 		userRouter.UserInformationRouter.InitUserInformationRouter(MainGroup)
 		userRouter.NotificationRouter.InitNotificationRouter(MainGroup)
+		userRouter.MediaRouter.InitMediaRouter(MainGroup)
 	}
 	{
 		managerRouter.MessageRouter.InitMessageRoter(MainGroup)

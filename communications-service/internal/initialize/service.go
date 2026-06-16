@@ -18,4 +18,5 @@ func InitMessageService() {
 	service.InitConversationService(impl.NewConversationImpl(queries))
 	service.InitMessageService(impl.NewMessageServiceImpl(queries))
 	service.InitNotificationService(impl.NewNotificationServiceImpl(queries))
+	service.InitMediaService(impl.NewMediaServiceImpl(queries))
 }
